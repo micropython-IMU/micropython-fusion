@@ -1,6 +1,6 @@
-# Sensor fusion for the micropython board. 21st May 2015
+# Sensor fusion for the micropython board. 22nd May 2015
 # Ported to Python by Peter Hinch
-# V0.2 Experimental. This is alpha quality code.
+# V0.2 Experimental. This is alpha quality code and needs further testing.
 
 import pyb 
 from math import sqrt, atan2, asin, degrees, radians
@@ -10,7 +10,7 @@ Source https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU.git
 also https://github.com/kriswiner/MPU-9250.git
 Ported to Python. Integrator timing adapted for pyboard.
 User should repeatedly call the appropriate update method and extract the yaw pitch and roll angles as
-reuired using the angles method.
+reuired.
 '''
 class Fusion(object):
     '''
@@ -24,19 +24,16 @@ class Fusion(object):
         self.start_time = None              # Time between updates
         self.q = [1.0, 0.0, 0.0, 0.0]       # vector to hold quaternion
         GyroMeasError = radians(40)         # Original code indicates this leads to a 2 sec response time
-        self.beta = sqrt(3.0 / 4.0) * GyroMeasError  # compute beta
+        self.beta = sqrt(3.0 / 4.0) * GyroMeasError  # compute beta (see README)
 
-# Getting this error unless I put tuple() in lines 39 and 40
-# File "fusion.py", line 41, in calibrate
-# TypeError: unsupported types for __lt__: 'int', 'str'
     def calibrate(self, getxyz, stopfunc):  # getxyz must return current magnetometer (x, y, z) tuple from the sensor
-        magxyz = getxyz()
+        magxyz = getxyz()                   # stopfunc (responding to time or user input) tells it to stop
         magmax = (v for v in magxyz)        # Initialise max and min iterators with current values
         magmin = (v for v in magxyz)
         while not stopfunc():
             pyb.delay(100)
             magxyz = getxyz()
-            magmax = map(max, magmax, magxyz) # tuple() shouldn't be necessary
+            magmax = map(max, magmax, magxyz)
             magmin = map(min, magmin, magxyz)
         self.magbias = tuple(map(lambda a, b: (a +b)/2, magmin, magmax))
 
