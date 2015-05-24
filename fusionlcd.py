@@ -12,6 +12,14 @@ fuse = Fusion()
 
 Calibrate = False
 
+def scale(func, template, *vecs):
+    res = []
+    for v in vecs:
+        res.append(tuple(map(func, template, v)))
+    return res
+
+rot = (-1, 1, 1)
+
 def lcd_thread(mylcd, imu):
     if Calibrate:
         sw = pyb.Switch()
@@ -27,8 +35,9 @@ def lcd_thread(mylcd, imu):
         count += 1
         if count % 25 == 0:
             mylcd[1] = "{:7.0f} {:7.0f} {:7.0f}".format(fuse.yaw, fuse.pitch, fuse.roll)
-        mx, my, mz = imu.get_mag() # Note blocking mag read
-        fuse.update(imu.get_accel(), imu.get_gyro(), (mx, my, mz))
+#        vectors = scale(lambda x, y: x*y, rot, imu.get_mag())
+        fuse.update(imu.get_accel(), imu.get_gyro(), imu.get_mag())
+#        fuse.update(imu.get_accel(), imu.get_gyro(), (mx, my, mz))
 #        fuse.update_nomag(imu.get_accel(), imu.get_gyro())
 
 objSched = Sched()

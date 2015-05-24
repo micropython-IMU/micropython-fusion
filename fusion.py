@@ -1,6 +1,7 @@
-# Sensor fusion for the micropython board. 22nd May 2015
-# Ported to Python by Peter Hinch
-# V0.2 Experimental. This is alpha quality code and needs further testing.
+# Sensor fusion for the micropython board. 24th May 2015
+# Ported to MicroPython/Pyboard by Peter Hinch.
+# V0.5 angles method replaced by yaw pitch and roll properties
+# V0.4 calibrate method added
 
 import pyb 
 from math import sqrt, atan2, asin, degrees, radians
@@ -15,8 +16,7 @@ reuired.
 class Fusion(object):
     '''
     Class provides sensor fusion allowing yaw, pitch and roll to be extracted. This uses the Madgwick algorithm.
-    The update method must be called peiodically. The calculations take 1.6mS on the Pyboard. Suggested update
-    rate 50Hz (20mS)
+    The update method must be called peiodically. The calculations take 1.6mS on the Pyboard.
     '''
     declination = 0                         # Optional offset for true north. A +ve value adds to yaw (anticlockwise rotation)
     def __init__(self):
@@ -50,14 +50,6 @@ class Fusion(object):
     def roll(self):
         return degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
             self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
-
-    def angles(self):
-        yaw = degrees(atan2(2.0 * (self.q[1] * self.q[2] + self.q[0] * self.q[3]),
-            self.q[0] * self.q[0] + self.q[1] * self.q[1] - self.q[2] * self.q[2] - self.q[3] * self.q[3]))
-        pitch = degrees(-asin(2.0 * (self.q[1] * self.q[3] - self.q[0] * self.q[2])))
-        roll  = degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
-            self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
-        return yaw + self.declination, pitch, roll
 
     def update_nomag(self, accel, gyro):    # 3-tuples (x, y, z) for accel, gyro
         ax, ay, az = accel                  # Units G (but later normalised)
