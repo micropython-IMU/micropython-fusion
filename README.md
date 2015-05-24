@@ -48,9 +48,9 @@ runs, the aim being to compensate for offsets caused by static local magnetic fi
 
 ### Properties
 
-Three read-only properties provide access to the angles. These are in degrees.  
+Three read-only properties provide access to the angles. These are in degrees.
 
-```yaw```
+   yaw
 
 Angle relative to North. Better terminology is "heading" since it is ground referenced: yaw
 is also used to mean the angle of an aircraft's fuselage relative to its direction of motion.
