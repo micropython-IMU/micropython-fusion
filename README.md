@@ -50,17 +50,17 @@ runs, the aim being to compensate for offsets caused by static local magnetic fi
 
 Three read-only properties provide access to the angles. These are in degrees.
 
-   yaw
+**yaw**
 
 Angle relative to North. Better terminology is "heading" since it is ground referenced: yaw
 is also used to mean the angle of an aircraft's fuselage relative to its direction of motion.
 
-```pitch```
+**pitch**
 
 Angle of aircraft nose relative to ground (conventionally +ve is towards ground). Also known
 as "elevation".
 
-```roll```
+**roll**
 
 Angle of aircraft wings to ground, also known as "bank".
 
