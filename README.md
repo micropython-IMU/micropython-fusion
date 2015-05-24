@@ -48,7 +48,7 @@ runs, the aim being to compensate for offsets caused by static local magnetic fi
 
 ### Properties
 
-Three read-only properties provide access to the angles. These are in degrees.
+Three read-only properties provide access to the angles. These are in degrees.  
 
 ```yaw```
 
