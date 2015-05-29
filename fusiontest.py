@@ -1,20 +1,25 @@
+# Simple test program for sensor fusion on Pyboard
+# Author Peter Hinch
+# 29th May 2015
+# V0.6
 import pyb
 from mpu9150 import MPU9150
 from fusion import Fusion
 
-imu = MPU9150('Y', 1, True)
+imu = MPU9150('X', 1, False)
 imu.gyro_range(0)
 imu.accel_range(0)
 
 fuse = Fusion()
 
-Calibrate = False
-Timing = True
+# Choose test to run
+Calibrate = True
+Timing = False
 
 if Calibrate:
     print("Calibrating. Press switch when done.")
     sw = pyb.Switch()
-    fuse.calibrate(imu.get_mag, sw)
+    fuse.calibrate(imu.get_mag, sw, lambda : pyb.delay(100))
     print(fuse.magbias)
 
 if Timing:
@@ -28,8 +33,8 @@ if Timing:
 
 count = 0
 while True:
-    pyb.delay(20)
-    count += 1
+    fuse.update(imu.get_accel(), imu.get_gyro(), imu.get_mag()) # Note blocking mag read
     if count % 50 == 0:
         print("Yaw, Pitch, Roll: {:7.3f} {:7.3f} {:7.3f}".format(fuse.yaw, fuse.pitch, fuse.roll))
-    fuse.update(imu.get_accel(), imu.get_gyro(), imu.get_mag()) # Note blocking mag read
+    pyb.delay(20)
+    count += 1

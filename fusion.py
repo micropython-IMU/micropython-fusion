@@ -1,5 +1,6 @@
-# Sensor fusion for the micropython board. 24th May 2015
+# Sensor fusion for the micropython board. 29th May 2015
 # Ported to MicroPython/Pyboard by Peter Hinch.
+# V0.6 calibrate altered to work round MicroPython map() bug, waitfunc added
 # V0.5 angles method replaced by yaw pitch and roll properties
 # V0.4 calibrate method added
 
@@ -10,15 +11,22 @@ Supports 6 and 9 degrees of freedom sensors. Tested with InvenSense MPU-9150 9DO
 Source https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU.git
 also https://github.com/kriswiner/MPU-9250.git
 Ported to Python. Integrator timing adapted for pyboard.
-User should repeatedly call the appropriate update method and extract the yaw pitch and roll angles as
-reuired.
+User should repeatedly call the appropriate 6 or 9 DOF update method and extract yaw pitch and roll angles as
+required.
+Calibrate method:
+The sensor should be slowly rotated around each orthogonal axis while this runs.
+arguments:
+getxyz must return current magnetometer (x, y, z) tuple from the sensor
+stopfunc (responding to time or user input) tells it to stop
+waitfunc provides a delay between readings. typically pyb.delay(100) but can be altered in threaded environment
+Sets magbias to the mean values of x,y,z
 '''
 class Fusion(object):
     '''
     Class provides sensor fusion allowing yaw, pitch and roll to be extracted. This uses the Madgwick algorithm.
     The update method must be called peiodically. The calculations take 1.6mS on the Pyboard.
     '''
-    declination = 0                         # Optional offset for true north. A +ve value adds to yaw (anticlockwise rotation)
+    declination = 0                         # Optional offset for true north. A +ve value adds to yaw
     def __init__(self):
         self.magbias = (0, 0, 0)            # local magnetic bias factors: set from calibration
         self.start_time = None              # Time between updates
@@ -26,15 +34,15 @@ class Fusion(object):
         GyroMeasError = radians(40)         # Original code indicates this leads to a 2 sec response time
         self.beta = sqrt(3.0 / 4.0) * GyroMeasError  # compute beta (see README)
 
-    def calibrate(self, getxyz, stopfunc):  # getxyz must return current magnetometer (x, y, z) tuple from the sensor
-        magxyz = getxyz()                   # stopfunc (responding to time or user input) tells it to stop
-        magmax = (v for v in magxyz)        # Initialise max and min iterators with current values
-        magmin = (v for v in magxyz)
+    def calibrate(self, getxyz, stopfunc, waitfunc):
+        magmax = list(getxyz())             # Initialise max and min lists with current values
+        magmin = magmax[:]
         while not stopfunc():
-            pyb.delay(100)
-            magxyz = getxyz()
-            magmax = map(max, magmax, magxyz)
-            magmin = map(min, magmin, magxyz)
+            waitfunc()
+            magxyz = tuple(getxyz())
+            for x in range(3):
+                magmax[x] = max(magmax[x], magxyz[x])
+                magmin[x] = min(magmin[x], magxyz[x])
         self.magbias = tuple(map(lambda a, b: (a +b)/2, magmin, magmax))
 
     @property
