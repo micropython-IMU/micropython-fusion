@@ -25,7 +25,7 @@ imu.accel_range(0)
 
 fuse = Fusion()
 
-Calibrate = False
+Calibrate = True
 
 def lcd_thread(mylcd, imu):
     if Calibrate:

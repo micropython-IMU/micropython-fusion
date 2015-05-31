@@ -2,8 +2,11 @@
 
 Sensor fusion calculating yaw, pitch and roll from the outputs of motion tracking devices. This
 uses the Madgwick algorithm, widely used in multicopter designs for its speed and quality. An
-update takes about 1.6mS on the Pyboard. The code is intended to be independent of the sensor
-device: testing was done with the InvenSense MPU-9150.
+update takes about 1.6mS on the Pyboard. The original Madgwick study indicated that an update
+rate of 10-50Hz was adequate for accurate results, suggesting that the performance of this
+implementation is fast enough.
+
+The code is intended to be independent of the sensor device: testing was done with the InvenSense MPU-9150.
 
 ## Disclaimer
 
@@ -52,8 +55,9 @@ Three read-only properties provide access to the angles. These are in degrees.
 
 **yaw**
 
-Angle relative to North. Better terminology is "heading" since it is ground referenced: yaw
-is also used to mean the angle of an aircraft's fuselage relative to its direction of motion.
+Angle relative to North. Better terminology is "heading" (used in the original Madgwick study)
+since it is ground referenced: yaw is also used to mean the angle of an aircraft's fuselage
+relative to its direction of motion.
 
 **pitch**
 
@@ -84,6 +88,8 @@ is on the ground:
 z Vertical axis, vector points towards ground  
 x Axis towards the front of the vehicle, vector points in normal direction of travel  
 y Vector points left from pilot's point of view (I think)  
+orientate.py has some simple code to correct for sensors mounted in ways which don't conform to
+this convention.
 
 You may want to take control of garbage collection (GC). In systems with continuously running
 control loops there is a case for doing an explicit GC on each iteration: this tends to make the
@@ -98,7 +104,7 @@ These are blatantly plagiarised as this isn't my field. I have quoted sources.
 Perhaps better titled heading, elevation and bank: there seems to be ambiguity about the concept
 of yaw, whether this is measured relative to the aircraft's local coordinate system or that of
 the Earth. The angles emitted by the Madgwick algorithm (Tait-Bryan angles) are earth-relative.  
-See http://en.wikipedia.org/wiki/Euler_angles#Tait.E2.80.93Bryan_angles
+See [Wikipedia article](http://en.wikipedia.org/wiki/Euler_angles#Tait.E2.80.93Bryan_angles)
 
 The following adapted from https://github.com/kriswiner/MPU-9250.git  
 These are Tait-Bryan angles, commonly used in aircraft orientation (DIN9300). In this coordinate
@@ -111,7 +117,7 @@ Roll is angle between sensor y-axis and Earth ground plane, y-axis up is positiv
 These arise from the definition of the homogeneous rotation matrix constructed from quaternions.
 Tait-Bryan angles as well as Euler angles are non-commutative; that is, the get the correct orientation
 the rotations must be applied in the correct order which for this configuration is yaw, pitch,
-and then roll. For more see http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+and then roll. For more see [Wikipedia article](http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles)
 which has additional links.
 
 I have seen sources which contradict the above directions for yaw (heading) and roll (bank).
@@ -121,7 +127,7 @@ I have seen sources which contradict the above directions for yaw (heading) and 
 The Madgwick algorithm has a "magic number" Beta which determines the tradeoff between accuracy
 and response speed.
 
-Source: https://github.com/kriswiner/MPU-9250.git  
+Source of comments below: https://github.com/kriswiner/MPU-9250.git  
 There is a tradeoff in the beta parameter between accuracy and response speed.
 In the original Madgwick study, beta of 0.041 (corresponding to GyroMeasError of 2.7 degrees/s)
 was found to give optimal accuracy. However, with this value, the LSM9SD0 response time is about
@@ -131,3 +137,7 @@ by about a factor of fifteen, the response time constant is reduced to ~2 sec.
 I haven't noticed any reduction in solution accuracy. This is essentially the I coefficient in a PID control sense; 
 the bigger the feedback coefficient, the faster the solution converges, usually at the expense of accuracy. 
 In any case, this is the free parameter in the Madgwick filtering and fusion scheme.
+
+### References
+
+[Original Madgwick study](http://sharenet-wii-motion-trac.googlecode.com/files/An_efficient_orientation_filter_for_inertial_and_inertialmagnetic_sensor_arrays.pdf)
