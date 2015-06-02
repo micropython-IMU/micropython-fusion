@@ -1,6 +1,6 @@
 # Fusionlcd.py Test for sensor fusion on Pyboard. Uses LCD display and threaded library.
 # Author Peter Hinch
-# V0.6 29th May 2015
+# V0.65 2nd June 2015
 
 import pyb
 from mpu9150 import MPU9150
@@ -18,6 +18,7 @@ D6   13   4        Y4
 D5   12   5        Y5
 D4   11   6        Y6
 """
+switch = pyb.Pin('Y7', pyb.Pin.IN, pull=pyb.Pin.PULL_UP) # Switch to ground on Y7
 
 imu = MPU9150('X', 1, True)                # Attached to 'X' bus, 1 device, disable interruots
 imu.gyro_range(0)
@@ -25,15 +26,15 @@ imu.accel_range(0)
 
 fuse = Fusion()
 
-Calibrate = True
+def waitfunc():
+    yield from wait(0.1)
 
-def lcd_thread(mylcd, imu):
-    if Calibrate:
-        mylcd[0] = "Calibrate. Push button"
+def lcd_thread(mylcd, imu, sw):
+    if sw.value() == 1:
+        mylcd[0] = "Calibrate. Push switch"
         mylcd[1] = "when done"
         yield from wait(0.1)
-        sw = pyb.Switch()
-        fuse.calibrate(imu.get_mag, sw, lambda : pyb.delay(100))
+        fuse.calibrate(imu.get_mag, lambda : not sw.value(), waitfunc)
         print(fuse.magbias)
     mylcd[0] = "{:5s}{:5s} {:5s}".format("Yaw","Pitch","Roll")
     count = 0
@@ -48,5 +49,5 @@ def lcd_thread(mylcd, imu):
 
 objSched = Sched()
 lcd0 = LCD(PINLIST, objSched, cols = 24) # Should work with 16 column LCD
-objSched.add_thread(lcd_thread(lcd0, imu))
+objSched.add_thread(lcd_thread(lcd0, imu, switch))
 objSched.run()
