@@ -40,11 +40,15 @@ speed. Units:
 accel: Typically G. Values are normalised in the algorithm so units are irrelevant.
 gyro: Degrees per second.
 
-```calibrate(getxyz, stopfunc)```
+```calibrate(getxyz, stopfunc, waitfunc)```
 
 The first argument is a function returning a tuple of magnetic x,y,z values from the sensor.
 The second is a function returning ```True``` when calibration is deemed complete: this could
-be a timer or an input from the user. The method updates the ```magbias``` property.
+be a timer or an input from the user.  
+The third is a function providing a delay. Some hardware may require a delay between magnetometer
+readings. In multi-threaded environments the function provides an opportunity to yield
+execution to other threads.  
+The method updates the ```magbias``` property.
 
 Calibration is performed by rotating the unit around each orthogonal axis while the routine
 runs, the aim being to compensate for offsets caused by static local magnetic fields.
@@ -77,7 +81,7 @@ these will be aliased down into the filter passband and affect the results. It's
 neccessary to isolate the sensor with a mechanical filter, typically a mass supported on very
 soft rubber mounts.
 
-If using a magnetoemeter consider the fact that the Earth's magnetic field is small: the field
+If using a magnetometer consider the fact that the Earth's magnetic field is small: the field
 detected may be influenced by ferrous metals in the machine being controlled or by currents in
 nearby wires. If the latter are variable there is little chance of compensating for them, but
 constant magnetic offsets may be addressed by calibration. This involves rotating the machine
