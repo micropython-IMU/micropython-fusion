@@ -1,5 +1,6 @@
 # Sensor fusion for the micropython board. 29th May 2015
 # Ported to MicroPython/Pyboard by Peter Hinch.
+# V0.65 waitfunc now optional
 # V0.6 calibrate altered to work round MicroPython map() bug, waitfunc added
 # V0.5 angles method replaced by yaw pitch and roll properties
 # V0.4 calibrate method added
@@ -18,8 +19,8 @@ The sensor should be slowly rotated around each orthogonal axis while this runs.
 arguments:
 getxyz must return current magnetometer (x, y, z) tuple from the sensor
 stopfunc (responding to time or user input) tells it to stop
-waitfunc provides a delay between readings. typically pyb.delay(100) but can be altered in threaded environment
-Sets magbias to the mean values of x,y,z
+waitfunc provides an optional delay between readings to accommodate hardware or to avoid hogging
+the CPU in a threaded environment. It sets magbias to the mean values of x,y,z
 '''
 class Fusion(object):
     '''
@@ -34,11 +35,12 @@ class Fusion(object):
         GyroMeasError = radians(40)         # Original code indicates this leads to a 2 sec response time
         self.beta = sqrt(3.0 / 4.0) * GyroMeasError  # compute beta (see README)
 
-    def calibrate(self, getxyz, stopfunc, waitfunc):
+    def calibrate(self, getxyz, stopfunc, waitfunc = None):
         magmax = list(getxyz())             # Initialise max and min lists with current values
         magmin = magmax[:]
         while not stopfunc():
-            waitfunc()
+            if waitfunc is not None:
+                waitfunc()
             magxyz = tuple(getxyz())
             for x in range(3):
                 magmax[x] = max(magmax[x], magxyz[x])
@@ -117,8 +119,8 @@ class Fusion(object):
         self.q = q1 * norm, q2 * norm, q3 * norm, q4 * norm
 
     def update(self, accel, gyro, mag):     # 3-tuples (x, y, z) for accel, gyro and mag data
-        mx, my, mz = (mag[x] - self.magbias[x] for x in range(3)) # Units uT
-        ax, ay, az = accel                  # Units G (but later normalised)
+        mx, my, mz = (mag[x] - self.magbias[x] for x in range(3)) # Units irrelevant (normalised)
+        ax, ay, az = accel                  # Units irrelevant (normalised)
         gx, gy, gz = (radians(x) for x in gyro)  # Units deg/s
         if self.start_time is None:
             self.start_time = pyb.micros()  # First run

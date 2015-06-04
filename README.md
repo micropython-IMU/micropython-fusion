@@ -27,22 +27,22 @@ if you use a 6 degrees of freedom (DOF) sensor, yaw will be invalid.
 
 For 9DOF sensors. Accepts three 3-tuples (x, y, z) of accelerometer, gyro and magnetometer data
 and updates the filters. This should be called periodically with a frequency depending on the
-required response speed. Units:
-accel: Typically G. Values are normalised in the algorithm so units are irrelevant.
-gyro: Degrees per second.
-magnetometer: Microtesla.
+required response speed. Units:  
+accel: Typically G. Values are normalised in the algorithm: units are irrelevant.  
+gyro: Degrees per second.  
+magnetometer: Typically Microtesla but values are normalised in the algorithm: units are irrelevant.
 
 ```update_nomag(accel, gyro)```
 
 For 6DOF sensors. Accepts 3-tuples (x, y, z) of accelerometer and gyro data and
 updates the filters. This should be called periodically, depending on the required response
-speed. Units:
-accel: Typically G. Values are normalised in the algorithm so units are irrelevant.
-gyro: Degrees per second.
+speed. Units:  
+accel: Typically G. Values are normalised in the algorithm so units are irrelevant.  
+gyro: Degrees per second.  
 
-```calibrate(getxyz, stopfunc, waitfunc)```
+```calibrate(getxyz, stopfunc, waitfunc = None)```
 
-The first argument is a function returning a tuple of magnetic x,y,z values from the sensor.
+The first argument is a function returning a tuple of magnetic x,y,z values from the sensor.  
 The second is a function returning ```True``` when calibration is deemed complete: this could
 be a timer or an input from the user.  
 The third is a function providing a delay. Some hardware may require a delay between magnetometer
