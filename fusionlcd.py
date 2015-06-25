@@ -1,6 +1,7 @@
 # Fusionlcd.py Test for sensor fusion on Pyboard. Uses LCD display and threaded library.
 # Author Peter Hinch
-# V0.65 2nd June 2015
+# For libraries see https://github.com/peterhinch/Micropython-scheduler.git
+# V0.7 25th June 2015 Adapted for new MPU9x50 interface
 
 import pyb
 from mpu9150 import MPU9150
@@ -20,9 +21,7 @@ D4   11   6        Y6
 """
 switch = pyb.Pin('Y7', pyb.Pin.IN, pull=pyb.Pin.PULL_UP) # Switch to ground on Y7
 
-imu = MPU9150('X', 1, True)                # Attached to 'X' bus, 1 device, disable interruots
-imu.gyro_range(0)
-imu.accel_range(0)
+imu = MPU9150('X')                # Attached to 'X' bus, 1 device, disable interruots
 
 fuse = Fusion()
 
@@ -34,7 +33,7 @@ def lcd_thread(mylcd, imu, sw):
         mylcd[0] = "Calibrate. Push switch"
         mylcd[1] = "when done"
         yield from wait(0.1)
-        fuse.calibrate(imu.get_mag, lambda : not sw.value(), waitfunc)
+        fuse.calibrate(imu.mag.xyz, lambda : not sw.value(), waitfunc)
         print(fuse.magbias)
     mylcd[0] = "{:5s}{:5s} {:5s}".format("Yaw","Pitch","Roll")
     count = 0
@@ -42,8 +41,8 @@ def lcd_thread(mylcd, imu, sw):
         yield from wait(0.02) # IMU updates at 50Hz
         count += 1
         if count % 25 == 0:
-            mylcd[1] = "{:4.0f} {:4.0f}  {:4.0f}".format(fuse.yaw, fuse.pitch, fuse.roll)
-        fuse.update(imu.get_accel(), imu.get_gyro(), imu.get_mag())
+            mylcd[1] = "{:4.0f} {:4.0f}  {:4.0f}".format(fuse.heading, fuse.pitch, fuse.roll)
+        fuse.update(imu.accel.xyz, imu.gyro.xyz, imu.mag.xyz)
 # For 6DOF sensors
 #        fuse.update_nomag(imu.get_accel(), imu.get_gyro())
 

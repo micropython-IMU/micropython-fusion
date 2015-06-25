@@ -1,8 +1,9 @@
-# Sensor fusion for the micropython board. 29th May 2015
+# Sensor fusion for the micropython board. 25th June 2015
 # Ported to MicroPython/Pyboard by Peter Hinch.
+# V0.7 Yaw replaced with heading
 # V0.65 waitfunc now optional
 # V0.6 calibrate altered to work round MicroPython map() bug, waitfunc added
-# V0.5 angles method replaced by yaw pitch and roll properties
+# V0.5 angles method replaced by heading pitch and roll properties
 # V0.4 calibrate method added
 
 import pyb 
@@ -12,7 +13,7 @@ Supports 6 and 9 degrees of freedom sensors. Tested with InvenSense MPU-9150 9DO
 Source https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU.git
 also https://github.com/kriswiner/MPU-9250.git
 Ported to Python. Integrator timing adapted for pyboard.
-User should repeatedly call the appropriate 6 or 9 DOF update method and extract yaw pitch and roll angles as
+User should repeatedly call the appropriate 6 or 9 DOF update method and extract heading pitch and roll angles as
 required.
 Calibrate method:
 The sensor should be slowly rotated around each orthogonal axis while this runs.
@@ -24,10 +25,10 @@ the CPU in a threaded environment. It sets magbias to the mean values of x,y,z
 '''
 class Fusion(object):
     '''
-    Class provides sensor fusion allowing yaw, pitch and roll to be extracted. This uses the Madgwick algorithm.
+    Class provides sensor fusion allowing heading, pitch and roll to be extracted. This uses the Madgwick algorithm.
     The update method must be called peiodically. The calculations take 1.6mS on the Pyboard.
     '''
-    declination = 0                         # Optional offset for true north. A +ve value adds to yaw
+    declination = 0                         # Optional offset for true north. A +ve value adds to heading
     def __init__(self):
         self.magbias = (0, 0, 0)            # local magnetic bias factors: set from calibration
         self.start_time = None              # Time between updates
@@ -48,7 +49,7 @@ class Fusion(object):
         self.magbias = tuple(map(lambda a, b: (a +b)/2, magmin, magmax))
 
     @property
-    def yaw(self):
+    def heading(self):
         return self.declination + degrees(atan2(2.0 * (self.q[1] * self.q[2] + self.q[0] * self.q[3]),
             self.q[0] * self.q[0] + self.q[1] * self.q[1] - self.q[2] * self.q[2] - self.q[3] * self.q[3]))
 

@@ -1,6 +1,6 @@
 # micropython-fusion
 
-Sensor fusion calculating yaw, pitch and roll from the outputs of motion tracking devices. This
+Sensor fusion calculating heading, pitch and roll from the outputs of motion tracking devices. This
 uses the Madgwick algorithm, widely used in multicopter designs for its speed and quality. An
 update takes about 1.6mS on the Pyboard. The original Madgwick study indicated that an update
 rate of 10-50Hz was adequate for accurate results, suggesting that the performance of this
@@ -18,8 +18,8 @@ if my observations about coordinate conventions are incorrect.
 ## Fusion class
 
 The module supports this one class. A Fusion object needs to be periodically updated with data
-from the sensor. It provides yaw, pitch and roll values (in degrees) as properties. Note that
-if you use a 6 degrees of freedom (DOF) sensor, yaw will be invalid.
+from the sensor. It provides heading, pitch and roll values (in degrees) as properties. Note that
+if you use a 6 degrees of freedom (DOF) sensor, heading will be invalid.
 
 ### Methods
 
@@ -57,11 +57,10 @@ runs, the aim being to compensate for offsets caused by static local magnetic fi
 
 Three read-only properties provide access to the angles. These are in degrees.
 
-**yaw**
+**heading**
 
-Angle relative to North. Better terminology is "heading" (used in the original Madgwick study)
-since it is ground referenced: yaw is also used to mean the angle of an aircraft's fuselage
-relative to its direction of motion.
+Angle relative to North. Note some sources use the term "yaw". As this is also used to mean
+the angle of an aircraft's fuselage relative to its direction of motion, I have avoided it.
 
 **pitch**
 
@@ -103,11 +102,12 @@ GC time shorter and ensures it occurs at a predictable time. See the MicroPython
 
 These are blatantly plagiarised as this isn't my field. I have quoted sources.
 
-### Yaw Pitch and Roll
+### Heading Pitch and Roll
 
 Perhaps better titled heading, elevation and bank: there seems to be ambiguity about the concept
 of yaw, whether this is measured relative to the aircraft's local coordinate system or that of
-the Earth. The angles emitted by the Madgwick algorithm (Tait-Bryan angles) are earth-relative.  
+the Earth: the original Madgwick study uses the term "heading", a convention I have retained as
+the angles emitted by the Madgwick algorithm (Tait-Bryan angles) are earth-relative.  
 See [Wikipedia article](http://en.wikipedia.org/wiki/Euler_angles#Tait.E2.80.93Bryan_angles)
 
 The following adapted from https://github.com/kriswiner/MPU-9250.git  
