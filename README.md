@@ -122,20 +122,12 @@ local magnetic fields.
 
 Three read-only properties provide access to the angles. These are in degrees.
 
-**heading**
-
-Angle relative to North. Note some sources use the term "yaw". As this is also
-used to mean the angle of an aircraft's fuselage relative to its direction of
-motion, I have avoided it.
-
-**pitch**
-
-Angle of aircraft nose relative to ground (conventionally +ve is towards
-ground). Also known as "elevation".
-
-**roll**
-
-Angle of aircraft wings to ground, also known as "bank".
+ 1. ``heading`` Angle relative to North. Note some sources use the term "yaw".
+ As this is also used to mean the angle of an aircraft's fuselage relative to
+ its direction of motion, I have avoided it.
+ 2. ``pitch`` Angle of aircraft nose relative to ground (conventionally +ve is
+ towards ground). Also known as "elevation".
+ 3. ``roll`` Angle of aircraft wings to ground, also known as "bank".
 
 ###### [Jump to Contents](./README.md#contents)
 
@@ -214,20 +206,12 @@ local magnetic fields.
 Three bound variables provide the angles with negligible latency. These are in
 degrees.
 
-**heading**
-
-Angle relative to North. Note some sources use the term "yaw". As this is also
-used to mean the angle of an aircraft's fuselage relative to its direction of
-motion, I have avoided it.
-
-**pitch**
-
-Angle of aircraft nose relative to ground (conventionally +ve is towards
-ground). Also known as "elevation".
-
-**roll**
-
-Angle of aircraft wings to ground, also known as "bank".
+ 1. ``heading`` Angle relative to North. Note some sources use the term "yaw".
+ As this is also used to mean the angle of an aircraft's fuselage relative to
+ its direction of motion, I have avoided it.
+ 2. ``pitch`` Angle of aircraft nose relative to ground (conventionally +ve is
+ towards ground). Also known as "elevation".
+ 3. ``roll`` Angle of aircraft wings to ground, also known as "bank".
 
 ###### [Jump to Contents](./README.md#contents)
 
@@ -319,7 +303,7 @@ this is the free parameter in the Madgwick filtering and fusion scheme.
 
 # 6. References
 
-[Original Madgwick study](http://sharenet-wii-motion-trac.googlecode.com/files/An_efficient_orientation_filter_for_inertial_and_inertialmagnetic_sensor_arrays.pdf)
-[Euler and Tait Bryan angles](http://en.wikipedia.org/wiki/Euler_angles#Tait.E2.80.93Bryan_angles)
-[Quaternions to Euler angles](http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles)
+[Original Madgwick study](http://sharenet-wii-motion-trac.googlecode.com/files/An_efficient_orientation_filter_for_inertial_and_inertialmagnetic_sensor_arrays.pdf)  
+[Euler and Tait Bryan angles](http://en.wikipedia.org/wiki/Euler_angles#Tait.E2.80.93Bryan_angles)  
+[Quaternions to Euler angles](http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles)  
 [Beta](https://github.com/kriswiner/MPU-9250.git)
