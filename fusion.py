@@ -40,12 +40,15 @@ class Fusion(object):
         GyroMeasError = radians(40)         # Original code indicates this leads to a 2 sec response time
         self.beta = sqrt(3.0 / 4.0) * GyroMeasError  # compute beta (see README)
 
-    def calibrate(self, getxyz, stopfunc, waitfunc = None):
+    def calibrate(self, getxyz, stopfunc, wait=0):
         magmax = list(getxyz())             # Initialise max and min lists with current values
         magmin = magmax[:]
         while not stopfunc():
-            if waitfunc is not None:
-                waitfunc()
+            if wait != 0:
+                if callable(wait):
+                    wait()
+                else:
+                    time.sleep_ms(wait)
             magxyz = tuple(getxyz())
             for x in range(3):
                 magmax[x] = max(magmax[x], magxyz[x])

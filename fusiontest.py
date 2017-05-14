@@ -1,7 +1,9 @@
 # Simple test program for sensor fusion on Pyboard
 # Author Peter Hinch
+# V0.8 14th May 2017 Option for external switch for cal test
 # V0.7 25th June 2015 Adapted for new MPU9x50 interface
 
+from machine import Pin
 import pyb
 from mpu9150 import MPU9150
 from fusion import Fusion
@@ -9,6 +11,13 @@ from fusion import Fusion
 imu = MPU9150('X')
 
 fuse = Fusion()
+
+# Code for external switch
+switch = Pin('Y7', Pin.IN, pull=Pin.PULL_UP) # Switch to ground on Y7
+def sw():
+    return not switch.value()
+# Code for Pyboard switch
+#sw = pyb.Switch()
 
 # Choose test to run
 Calibrate = True
@@ -19,7 +28,6 @@ def getmag():                               # Return (x, y, z) tuple (blocking r
 
 if Calibrate:
     print("Calibrating. Press switch when done.")
-    sw = pyb.Switch()
     fuse.calibrate(getmag, sw, lambda : pyb.delay(100))
     print(fuse.magbias)
 
