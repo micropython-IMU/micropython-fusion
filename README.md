@@ -2,7 +2,7 @@
 
 Sensor fusion calculates heading, pitch and roll from the outputs of motion
 tracking devices. This uses the Madgwick algorithm, widely used in multicopter
-designs for its speed and quality. An update takes about 1.6mS on the Pyboard.
+designs for its speed and quality. An update takes under 2mS on the Pyboard.
 The original Madgwick study indicated that an update rate of 10-50Hz was
 adequate for accurate results, suggesting that the performance of this
 implementation is fast enough.
@@ -70,7 +70,7 @@ The issue of the orientation of the sensor is discussed in
 
    2.1.1 [Methods](./README.md#211-methods)
 
-   2.1.2 [Properties and bound variables](./README.md#212-properties-and-bound-variables)
+   2.1.2 [Bound variables](./README.md#212-bound-variables)
 
  3. [Asynchronous version](./README.md#3-asynchronous-version)
 
@@ -78,7 +78,7 @@ The issue of the orientation of the sensor is discussed in
 
    3.1.1 [Methods](./README.md#311-methods)
 
-   3.1.2 [Bound variables](./README.md#312-bound-variables)
+   3.1.2 [Variables](./README.md#312-variables)
 
  4. [Notes for constructors](./README.md#4-notes-for-constructors)
  
@@ -97,10 +97,15 @@ The issue of the orientation of the sensor is discussed in
  access to pitch, heading and roll.
  3. ``orientate.py`` A utility for adjusting orientation of an IMU for sensor
  fusion.
- 4. ``fusiontest.py`` A simple test program for synchronous library.
- 5. ``fusiontest_as.py`` Simple test for the asynchronous library.
- 6. ``fusionlcd.py`` A test program for the async library which uses a Hitachi
- HD44780 2-row LCD text display to show angle values.
+
+Test/demo programs:
+
+ 1. ``fusiontest.py`` A simple test program for synchronous library.
+ 2. ``fusiontest6.py`` Variant of above for 6DOF sensors.
+ 3. ``fusiontest_as.py`` Simple test for the asynchronous library.
+ 4. ``fusiontest_as6.py`` Variant of above for 6DOF sensors.
+ 5. ``fusionlcd.py`` Tests the async library with a Hitachi HD44780 2-row LCD
+ text display to continuously display angle values.
 
 ###### [Jump to Contents](./README.md#contents)
 
@@ -143,15 +148,13 @@ Positional arguments:
  magnetometer readings. Alternatively a function which returns after a delay
  may be passed.
 
-The method updates the ``magbias`` bound variable.
+Calibration updates the ``magbias`` bound variable. It is performed by rotating
+the unit slowly around each orthogonal axis while the routine runs, the aim
+being to compensate for offsets caused by static local magnetic fields.
 
-Calibration is performed by rotating the unit around each orthogonal axis while
-the routine runs, the aim being to compensate for offsets caused by static
-local magnetic fields.
+### 2.1.2 Bound variables
 
-### 2.1.2 Properties and bound variables
-
-Three read-only properties provide access to the angles in degrees:
+Three bound variables provide access to the angles in degrees:
 
  1. ``heading``
  2. ``pitch``
@@ -173,59 +176,74 @@ asynchronous programming. Updates are performed by a continuously running
 coroutine. The ``heading``, ``pitch`` and ``roll`` values are bound variables
 which may be accessed at any time with effectively zero latency. The test
 program ``fusionlcd.py`` illustrates its use showing realtime data on a text
-LCD display.
+LCD display, ``fusiontest_as.py`` prints it at the REPL.
 
 ## 3.1 Fusion class
 
-The module supports this one class. A Fusion instance runs an ``update``
-coroutine contiuously which maintains the heading, pitch and roll bound
-variables. This is achieved by running user supplied callbacks providing data
-from the sensor. Note that if you use a 6DOF sensor, heading will be invalid
-(0).
+The module supports this one class. The constructor is passed a user-supplied
+coro which returns the accelerometer, gyro, and (in the case of 9DOF sensors)
+magnetometer data. A Fusion instance has a continuously running coroutine which
+maintains the heading, pitch and roll bound variables.
 
-The update method is run as follows (typically, in the case of 9DOF sensors,
+Typical constructor call:
+
+```python
+imu = MPU9150('X')  # Instantiate IMU (default orientation)
+
+async def read_coro():
+    imu.mag_trigger()  # Hardware dependent: trigger a nonblocking read
+    await asyncio.sleep_ms(20)  # Wait for mag to be ready
+    return imu.accel.xyz, imu.gyro.xyz, imu.mag_nonblocking.xyz
+    # Returned (ax, ay, az), (gx, gy, gz), (mx, my, mz)
+
+fuse = Fusion(read_coro)
+```
+
+The update method is started as follows (usually, in the case of 9DOF sensors,
 after a calibration phase):
 
 ```python
-    loop = asyncio.get_event_loop()
-    loop.create_task(fusion.update(accel, gyro, mag, 20))
+    await fuse.start()
 ```
+
+This starts a continuously running update task. It calls the coro supplied to
+the constructor to determine (from the returned data) whether the sensor is a
+6DOF or 9DOF variety. It then launches the appropriate task. From this point
+the application accesses the ``heading``, ``pitch`` and ``roll`` bound
+variables as required.
 
 ### 3.1.1 Methods
 
-```async def update(faccel, fgyro, fmag, delay)```
+Constructor:
 
-For 9DOF sensors. Positional arguments:  
- 1. ``faccel`` Function returning a 3-tuple (x, y, z) of accelerometer data.
- 2. ``fgyro`` Function returning a 3-tuple (x, y, z) of gyro data.
- 3. ``fmag`` Function returning a 3-tuple (x, y, z) of magnetometer data.
- 4. ``delay`` Delay between updates (ms). This value may be IMU hardware or
- application dependent.
+This takes a single argument which is a coroutine. This returns three (x, y, z)
+3-tuples for accelerometer, gyro, and magnetometer data respectively. In the
+case of 6DOF sensors it returns two 3-tuples for accelerometer and gyro only.
+The coroutine must include at least one ``await asyncio.sleep_ms`` statement to
+conform to Python syntax rules. A nonzero delay may be required by the IMU
+hardware; it may also be employed to limit the update rate, thereby controlling
+the CPU resources used by this task.
 
-``async def update_nomag(accel, gyro, delay)``
+``async def start(slow_platform=False)``  
+This launches the update task, returning immediately.
 
-For 6DOF sensors. Mandatory positional arguments:
- 1. ``faccel`` Function returning a 3-tuple (x, y, z) of accelerometer data.
- 2. ``fgyro`` Function returning a 3-tuple (x, y, z) of gyro data.
- 3. ``delay`` Delay between updates (ms). This value may be IMU hardware or
- application dependent.
+Optional argument:  
+ 1. ``slow_platform`` Boolean. Adds a yield to the scheduler in the middle of
+ the  computation. This may improve application performance on slow platforms
+ such as the ESP8266.
 
-``async def calibrate(getxyz, stopfunc, wait = 0)``
+For 9DOF sensors only:
+``async def calibrate(stopfunc)``
 
-Arguments:
- 1. ``getxyz`` Function returning a 3-tuple (x, y, z) of magnetometer data.
- 2. ``stopfunc`` Function returning ``True`` when calibration is deemed
+Argument:
+ 1. ``stopfunc`` Function returning ``True`` when calibration is deemed
  complete: this could be a timer or an input from the user.
- 3. ``wait`` Delay in ms between magnetometer readings. May be required by some
- hardware.
 
-The method updates the ``magbias`` bound variable.
+Calibration updates the ``magbias`` bound variable. It is performed by rotating
+the unit slowly around each orthogonal axis while the routine runs, the aim
+being to compensate for offsets caused by static local magnetic fields.
 
-Calibration is performed by rotating the unit around each orthogonal axis while
-the routine runs, the aim being to compensate for offsets caused by static
-local magnetic fields.
-
-### 3.1.2 Bound variables
+### 3.1.2 Variables
 
 Three bound variables provide the angles with negligible latency. Units are
 degrees.

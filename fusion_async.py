@@ -25,7 +25,8 @@ class Fusion(object):
     The update method runs as a coroutine. Its calculations take 1.6mS on the Pyboard.
     '''
     declination = 0                         # Optional offset for true north. A +ve value adds to heading
-    def __init__(self):
+    def __init__(self, read_coro):
+        self.read_coro = read_coro
         self.magbias = (0, 0, 0)            # local magnetic bias factors: set from calibration
         self.start_time = None              # Time between updates
         self.q = [1.0, 0.0, 0.0, 0.0]       # vector to hold quaternion
@@ -35,22 +36,28 @@ class Fusion(object):
         self.heading = 0
         self.roll = 0
 
-    async def calibrate(self, getxyz, stopfunc, wait=0):
-        magmax = list(getxyz())             # Initialise max and min lists with current values
+    async def calibrate(self, stopfunc):
+        _, _, mag = await self.read_coro()
+        magmax = list(mag)                  # Initialise max and min lists with current values
         magmin = magmax[:]
         while not stopfunc():
-            await asyncio.sleep_ms(wait)
-            magxyz = tuple(getxyz())
+            magxyz, _, _  = await self.read_coro()
             for x in range(3):
                 magmax[x] = max(magmax[x], magxyz[x])
                 magmin[x] = min(magmin[x], magxyz[x])
         self.magbias = tuple(map(lambda a, b: (a +b)/2, magmin, magmax))
 
-    async def update_nomag(self, faccel, fgyro, delay):  # 3-tuples (x, y, z) for accel, gyro
-        while True:
-            accel = faccel()
-            gyro = fgyro()
+    async def start(self, slow_platform=False):
+        data = await self.read_coro()
+        loop = asyncio.get_event_loop()
+        if len(data) == 2:
+            loop.create_task(self._update_nomag(slow_platform))
+        else:
+            loop.create_task(self._update_mag(slow_platform))
 
+    async def _update_nomag(self, slow_platform):
+        while True:
+            accel, gyro = await self.read_coro()
             ax, ay, az = accel                  # Units G (but later normalised)
             gx, gy, gz = (radians(x) for x in gyro) # Units deg/s
             if self.start_time is None:
@@ -97,7 +104,8 @@ class Fusion(object):
             qDot3 = 0.5 * (q1 * gy - q2 * gz + q4 * gx) - self.beta * s3
             qDot4 = 0.5 * (q1 * gz + q2 * gy - q3 * gx) - self.beta * s4
 
-            await asyncio.sleep_ms(0)
+            if slow_platform:
+                await asyncio.sleep_ms(0)
 
             # Integrate to yield quaternion
             deltat = elapsed_micros(self.start_time) / 1000000
@@ -112,13 +120,10 @@ class Fusion(object):
             self.pitch = degrees(-asin(2.0 * (self.q[1] * self.q[3] - self.q[0] * self.q[2])))
             self.roll = degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
                 self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
-            await asyncio.sleep_ms(delay)
 
-    async def update(self, faccel, fgyro, fmag, delay):     # 3-tuples (x, y, z) for accel, gyro and mag data
+    async def _update_mag(self, slow_platform):
         while True:
-            mag = fmag()
-            accel = faccel()
-            gyro = fgyro()
+            accel, gyro, mag = await self.read_coro()
             mx, my, mz = (mag[x] - self.magbias[x] for x in range(3)) # Units irrelevant (normalised)
             ax, ay, az = accel                  # Units irrelevant (normalised)
             gx, gy, gz = (radians(x) for x in gyro)  # Units deg/s
@@ -182,7 +187,8 @@ class Fusion(object):
                 + _2bz * q4 * (_2bx * (0.5 - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx) + (_2bx * q3 + _2bz * q1) * (_2bx * (q2q3 - q1q4)
                 + _2bz * (q1q2 + q3q4) - my) + (_2bx * q4 - _4bz * q2) * (_2bx * (q1q3 + q2q4) + _2bz * (0.5 - q2q2 - q3q3) - mz))
 
-            await asyncio.sleep_ms(0)
+            if slow_platform:
+                await asyncio.sleep_ms(0)
 
             s3 = (-_2q1 * (2 * q2q4 - _2q1q3 - ax) + _2q4 * (2 * q1q2 + _2q3q4 - ay) - 4 * q3 * (1 - 2 * q2q2 - 2 * q3q3 - az)
                 + (-_4bx * q3 - _2bz * q1) * (_2bx * (0.5 - q3q3 - q4q4) + _2bz * (q2q4 - q1q3) - mx)
@@ -219,4 +225,3 @@ class Fusion(object):
             self.pitch = degrees(-asin(2.0 * (self.q[1] * self.q[3] - self.q[0] * self.q[2])))
             self.roll = degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
                 self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
-            await asyncio.sleep_ms(delay)

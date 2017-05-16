@@ -2,7 +2,7 @@
 # Author: Peter Hinch
 # Released under the MIT License (MIT)
 # Copyright (c) 2017 Peter Hinch
-# V0.8 13th May 2017 Adapted for uasyncio
+# V0.8 16th May 2017 Adapted for uasyncio
 # V0.7 25th June 2015 Adapted for new MPU9x50 interface
 
 # Requires:
@@ -31,17 +31,17 @@ switch = Pin('Y7', Pin.IN, pull=Pin.PULL_UP) # Switch to ground on Y7
 
 imu = MPU9150('X')              # Attached to 'X' bus, 1 device, disable interruots
 
-fuse = Fusion()
 lcd = LCD(PINLIST, cols = 24)   # Should work with 16 column LCD
 
-def mag():                      # Return (x, y, z) tuple
-    return imu.mag_nonblocking.xyz
+# User coro returns data and determines update rate.
+# For 9DOF sensors returns three 3-tuples (x, y, z) for accel, gyro and mag
+# For 6DOF sensors two 3-tuples (x, y, z) for accel and gyro
+async def read_coro():
+    imu.mag_trigger()
+    await asyncio.sleep_ms(20)  # Plenty of time for mag to be ready
+    return imu.accel.xyz, imu.gyro.xyz, imu.mag_nonblocking.xyz
 
-def accel():
-    return imu.accel.xyz
-
-def gyro():
-    return imu.gyro.xyz
+fuse = Fusion(read_coro)
 
 async def mem_manage():         # Necessary for long term stability
     while True:
@@ -55,22 +55,19 @@ async def display():
         lcd[1] = "{:4.0f} {:4.0f}  {:4.0f}".format(fuse.heading, fuse.pitch, fuse.roll)
         await asyncio.sleep_ms(500)
 
-async def lcd_task(fusion, sw):
-    if sw.value() == 1:
+async def lcd_task():
+    print('Running test...')
+    if switch.value() == 1:
         lcd[0] = "Calibrate. Push switch"
         lcd[1] = "when done"
         await asyncio.sleep_ms(100)  # Let LCD coro run
-        await fusion.calibrate(mag, lambda : not sw.value(), 100)
+        await fuse.calibrate(lambda : not switch.value())
         print(fuse.magbias)
+    await fuse.start()  # Start the update task
     loop = asyncio.get_event_loop()
     loop.create_task(display())
-    loop.create_task(fusion.update(accel, gyro, mag, 20))
-
-# For 6DOF sensors
-#    loop.create_task(fusion.update_nomag(accel, gyro, 20)
-
 
 loop = asyncio.get_event_loop()
 loop.create_task(mem_manage())
-loop.create_task(lcd_task(fuse, switch))
+loop.create_task(lcd_task())
 loop.run_forever()
