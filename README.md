@@ -232,7 +232,7 @@ Optional argument:
  the  computation. This may improve application performance on slow platforms
  such as the ESP8266.
 
-For 9DOF sensors only:
+For 9DOF sensors only:  
 ``async def calibrate(stopfunc)``
 
 Argument:
