@@ -1,5 +1,7 @@
 # Simple test program for sensor fusion on Pyboard
 # Author Peter Hinch
+# Released under the MIT License (MIT)
+# Copyright (c) 2017 Peter Hinch
 # V0.8 14th May 2017 Option for external switch for cal test
 # V0.7 25th June 2015 Adapted for new MPU9x50 interface
 

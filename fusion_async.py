@@ -1,25 +1,20 @@
 # fusion_async.py Asynchronous sensor fusion for micropython targets.
 # Ported to MicroPython by Peter Hinch, May 2017.
-# Uses the uasyncio library to enable updating to run as a background coroutine
+# Released under the MIT License (MIT)
+# Copyright (c) 2017 Peter Hinch
+
+# Uses the uasyncio library to enable updating to run as a background coroutine.
+
+# Supports 6 and 9 degrees of freedom sensors. Tested with InvenSense MPU-9150 9DOF sensor.
+# Source https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU.git
+# also https://github.com/kriswiner/MPU-9250.git
+# Ported to Python. Integrator timing adapted for pyboard.
+# See README.md for documentation.
+
 
 import utime as time
 import uasyncio as asyncio
 from math import sqrt, atan2, asin, degrees, radians
-'''
-Supports 6 and 9 degrees of freedom sensors. Tested with InvenSense MPU-9150 9DOF sensor.
-Source https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU.git
-also https://github.com/kriswiner/MPU-9250.git
-Ported to Python. Integrator timing adapted for pyboard.
-User should repeatedly call the appropriate 6 or 9 DOF update method and extract heading pitch and roll angles as
-required.
-Calibrate method:
-The sensor should be slowly rotated around each orthogonal axis while this runs.
-arguments:
-getxyz must return current magnetometer (x, y, z) tuple from the sensor
-stopfunc (responding to time or user input) tells it to stop
-waitfunc provides an optional delay between readings to accommodate hardware or to avoid hogging
-the CPU in a threaded environment. It sets magbias to the mean values of x,y,z
-'''
 
 def elapsed_micros(start_time):
     return time.ticks_diff(time.ticks_us(), start_time)
@@ -27,7 +22,7 @@ def elapsed_micros(start_time):
 class Fusion(object):
     '''
     Class provides sensor fusion allowing heading, pitch and roll to be extracted. This uses the Madgwick algorithm.
-    The update method must be called peiodically. The calculations take 1.6mS on the Pyboard.
+    The update method runs as a coroutine. Its calculations take 1.6mS on the Pyboard.
     '''
     declination = 0                         # Optional offset for true north. A +ve value adds to heading
     def __init__(self):
@@ -225,4 +220,3 @@ class Fusion(object):
             self.roll = degrees(atan2(2.0 * (self.q[0] * self.q[1] + self.q[2] * self.q[3]),
                 self.q[0] * self.q[0] - self.q[1] * self.q[1] - self.q[2] * self.q[2] + self.q[3] * self.q[3]))
             await asyncio.sleep_ms(delay)
-

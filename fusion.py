@@ -1,28 +1,21 @@
 # Sensor fusion for the micropython board. 25th June 2015
-# Ported to MicroPython/Pyboard by Peter Hinch.
+# Ported to MicroPython by Peter Hinch.
+# Released under the MIT License (MIT)
+# Copyright (c) 2017 Peter Hinch
+
+# V0.8 Calibrate wait argument can be a function or an integer in ms.
 # V0.7 Yaw replaced with heading
 # V0.65 waitfunc now optional
-# V0.6 calibrate altered to work round MicroPython map() bug, waitfunc added
-# V0.5 angles method replaced by heading pitch and roll properties
-# V0.4 calibrate method added
+
+# Supports 6 and 9 degrees of freedom sensors. Tested with InvenSense MPU-9150 9DOF sensor.
+# Source https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU.git
+# also https://github.com/kriswiner/MPU-9250.git
+# Ported to Python. Integrator timing adapted for pyboard.
+# See README.md for documentation.
+
 
 import time
 from math import sqrt, atan2, asin, degrees, radians
-'''
-Supports 6 and 9 degrees of freedom sensors. Tested with InvenSense MPU-9150 9DOF sensor.
-Source https://github.com/xioTechnologies/Open-Source-AHRS-With-x-IMU.git
-also https://github.com/kriswiner/MPU-9250.git
-Ported to Python. Integrator timing adapted for pyboard.
-User should repeatedly call the appropriate 6 or 9 DOF update method and extract heading pitch and roll angles as
-required.
-Calibrate method:
-The sensor should be slowly rotated around each orthogonal axis while this runs.
-arguments:
-getxyz must return current magnetometer (x, y, z) tuple from the sensor
-stopfunc (responding to time or user input) tells it to stop
-waitfunc provides an optional delay between readings to accommodate hardware or to avoid hogging
-the CPU in a threaded environment. It sets magbias to the mean values of x,y,z
-'''
 
 def elapsed_micros(start_time):
     return time.ticks_diff(time.ticks_us(), start_time)
