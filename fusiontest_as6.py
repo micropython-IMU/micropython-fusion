@@ -10,10 +10,10 @@
 from machine import Pin
 import uasyncio as asyncio
 import gc
-from mpu9150 import MPU9150
+from imu import MPU6050
 from fusion_async import Fusion # Using async version
 
-imu = MPU9150('X')              # Attached to 'X' bus, 1 device, disable interrupts
+imu = MPU6050('X')              # Attached to 'X' bus, 1 device, disable interrupts
 
 # User coro returns data and determines update rate.
 # For 6DOF sensors two 3-tuples (x, y, z) for accel and gyro
