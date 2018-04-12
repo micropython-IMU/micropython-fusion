@@ -95,7 +95,8 @@ The issue of the orientation of the sensor is discussed in
  1. `fusion.py` The standard synchronous fusion library.
  2. `fusion_async.py` Version of the library using uasyncio for nonblocking
  access to pitch, heading and roll.
- 3. `orientate.py` A utility for adjusting orientation of an IMU for sensor
+ 3. `deltat.py` Controls timing for above.
+ 4. `orientate.py` A utility for adjusting orientation of an IMU for sensor
  fusion.
 
 Test/demo programs:

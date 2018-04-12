@@ -6,6 +6,7 @@
 # V0.7 25th June 2015 Adapted for new MPU9x50 interface
 
 from machine import Pin
+import pyb
 import utime as time
 from mpu9150 import MPU9150
 from fusion import Fusion
