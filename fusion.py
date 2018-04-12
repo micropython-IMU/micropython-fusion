@@ -1,8 +1,9 @@
 # Sensor fusion for the micropython board. 25th June 2015
 # Ported to MicroPython by Peter Hinch.
 # Released under the MIT License (MIT)
-# Copyright (c) 2017 Peter Hinch
+# Copyright (c) 2017, 2018 Peter Hinch
 
+# V0.9 Time calculations devolved to deltat.py
 # V0.8 Calibrate wait argument can be a function or an integer in ms.
 # V0.7 Yaw replaced with heading
 # V0.65 waitfunc now optional
@@ -13,14 +14,15 @@
 # Ported to Python. Integrator timing adapted for pyboard.
 # See README.md for documentation.
 
+# Portability: the only assumption is presence of time.sleep() used in mag
+# calibration.
+try:
+    import utime as time
+except ImportError:
+    import time
 
-import time
 from math import sqrt, atan2, asin, degrees, radians
-from deltat import DeltaT
-
-# Default time difference function. This is correct if the target is a MicroPython device.
-def TimeDiff(start, end):
-    return time.ticks_diff(start, end)/1000000
+from deltat import DeltaT, TimeDiff, is_micropython
 
 class Fusion(object):
     '''
@@ -28,9 +30,9 @@ class Fusion(object):
     The update method must be called peiodically. The calculations take 1.6mS on the Pyboard.
     '''
     declination = 0                         # Optional offset for true north. A +ve value adds to heading
-    def __init__(self, expect_ts=False,timediff=TimeDiff):
+    def __init__(self, expect_ts=False, timediff=TimeDiff):
         self.magbias = (0, 0, 0)            # local magnetic bias factors: set from calibration
-        self.deltat = DeltaT(expect_ts,timediff)     # Time between updates
+        self.deltat = DeltaT(expect_ts, timediff)  # Time between updates
         self.q = [1.0, 0.0, 0.0, 0.0]       # vector to hold quaternion
         GyroMeasError = radians(40)         # Original code indicates this leads to a 2 sec response time
         self.beta = sqrt(3.0 / 4.0) * GyroMeasError  # compute beta (see README)
@@ -46,7 +48,7 @@ class Fusion(object):
                 if callable(wait):
                     wait()
                 else:
-                    time.sleep_ms(wait)
+                    time.sleep(wait/1000)  # Portable
             magxyz = tuple(getxyz())
             for x in range(3):
                 magmax[x] = max(magmax[x], magxyz[x])
@@ -56,7 +58,6 @@ class Fusion(object):
     def update_nomag(self, accel, gyro, ts=None):    # 3-tuples (x, y, z) for accel, gyro
         ax, ay, az = accel                  # Units G (but later normalised)
         gx, gy, gz = (radians(x) for x in gyro) # Units deg/s
-        self.deltat.ensure_ready(ts)
         q1, q2, q3, q4 = (self.q[x] for x in range(4))   # short name local variable for readability
         # Auxiliary variables to avoid repeated arithmetic
         _2q1 = 2 * q1
@@ -116,7 +117,6 @@ class Fusion(object):
         mx, my, mz = (mag[x] - self.magbias[x] for x in range(3)) # Units irrelevant (normalised)
         ax, ay, az = accel                  # Units irrelevant (normalised)
         gx, gy, gz = (radians(x) for x in gyro)  # Units deg/s
-        self.deltat.ensure_ready(ts)
         q1, q2, q3, q4 = (self.q[x] for x in range(4))   # short name local variable for readability
         # Auxiliary variables to avoid repeated arithmetic
         _2q1 = 2 * q1
