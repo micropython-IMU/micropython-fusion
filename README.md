@@ -21,6 +21,18 @@ are to use frozen bytecode and to periodically run a garbage collection; the
 latter is advisable even on the Pyboard. See the `fusionlcd.py` test program
 for an example of this.
 
+# Remote mode
+
+A new method of operation now exists to cater for the case where the device
+capturing the IMU data is remote from that performing the sensor fusion, and
+connected to it by some form of data link. This mode of operation is described
+[here](./remote/README.md). Note that the fusion may be performed under CPython
+and the remote device may run any system so long as it provides data in the
+correct format.
+
+The following assumes that the IMU is located on the device performing fusion
+and that this device runs MicroPython.
+
 # Introduction
 
 ## Terminology and units of measurement
@@ -107,6 +119,9 @@ Test/demo programs:
  4. `fusiontest_as6.py` Variant of above for 6DOF sensors.
  5. `fusionlcd.py` Tests the async library with a Hitachi HD44780 2-row LCD
  text display to continuously display angle values.
+
+The directory `remote` contains files pertaining to
+[remote mode](./remote/README.md) only.
 
 ###### [Jump to Contents](./README.md#contents)
 

@@ -13,7 +13,10 @@
 
 # V0.9 Time calculations devolved to deltat.py
 
-import uasyncio as asyncio
+try:
+    import uasyncio as asyncio
+except ImportError:
+    import asyncio
 from math import sqrt, atan2, asin, degrees, radians
 from deltat import DeltaT, TimeDiff
 
@@ -36,11 +39,13 @@ class Fusion(object):
         self.roll = 0
 
     async def calibrate(self, stopfunc):
-        _, _, mag = await self.read_coro()
+        res = await self.read_coro()
+        mag = res[2]
         magmax = list(mag)                  # Initialise max and min lists with current values
         magmin = magmax[:]
         while not stopfunc():
-            magxyz, _, _  = await self.read_coro()
+            res = await self.read_coro()
+            magxyz = res[2]
             for x in range(3):
                 magmax[x] = max(magmax[x], magxyz[x])
                 magmin[x] = min(magmin[x], magxyz[x])
@@ -49,7 +54,7 @@ class Fusion(object):
     async def start(self, slow_platform=False):
         data = await self.read_coro()
         loop = asyncio.get_event_loop()
-        if len(data) == 2:
+        if len(data) == 2 or (self.expect_ts and len(data) == 3):
             loop.create_task(self._update_nomag(slow_platform))
         else:
             loop.create_task(self._update_mag(slow_platform))
