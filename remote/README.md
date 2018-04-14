@@ -84,6 +84,13 @@ def TimeDiff(start, end):  # Timestamps here are in μs
     return (start - end)/1000000  # Scale to seconds
 ```
 
+If standard Python's `time.time()` provides the timestamps no scaling is
+required. The function can reduce to:
+
+```python
+lambda start, end: start-end
+```
+
 ## 4.2 Calibration
 
 If magnetometer calibration is to be used the fusion program needs some form of
@@ -106,6 +113,9 @@ fuse = Fusion(True, TimeDiff)
 The first arg tells it to expect a timestamp. The second is the user supplied
 time differencing function. This arg may be omitted if the timestamp is derived
 from MicroPython's `utime.ticks_us()`.
+
+For details of the method of updating the fusion data and retrieving the angles
+see the [main document section 2](./README.md#2-fusion-module).
 
 ### 4.3.1 Test program fusion_r_syn.py
 
@@ -140,6 +150,9 @@ must include at least one `await` statement to conform to Python syntax rules.
 The second arg tells it to expect a timestamp. The third is the user supplied
 time differencing function. This arg may be omitted if the timestamp is derived
 from MicroPython's `utime.ticks_us()`.
+
+For details of the method of updating the fusion data and retrieving the angles
+see the [main document section 3](./README.md#3-asynchronous-version).
 
 ### 4.4.1 Test program fusion_r_asyn.py
 
