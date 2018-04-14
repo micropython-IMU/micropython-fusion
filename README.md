@@ -1,4 +1,4 @@
-# micropython-fusion
+# Introduction: micropython-fusion
 
 Sensor fusion calculates heading, pitch and roll from the outputs of motion
 tracking devices. This uses the Madgwick algorithm, widely used in multicopter
@@ -8,8 +8,26 @@ adequate for accurate results, suggesting that the performance of this
 implementation is fast enough.
 
 Two implementations are provided: one for synchronous code and one for
-applications using `uasyncio`. The latter provides for continuous background
-updates of the angle data enabling its access with minimal latency.
+asynchronous applications based on `asyncio`. The latter provides for
+continuous background updates of the angle data enabling access with minimal
+latency.
+
+## Platforms
+
+This document describes the case where sensor data is acquired, and fusion
+is performed, on a single platform running MicroPython.
+
+Other modes are supported:
+
+ * Fusion and data acquisition run on a common device under standard Python.
+ * Fusion and data acquisition run on separate devices linked by some form of
+ communications link. In this mode the data acquisition device may run any type
+ of code and return data in any format, with the user application reading and
+ converting the data to a form acceptable to the library.
+
+These modes are discussed [here](./remote/README.md).
+
+## MicroPython issues
 
 The code is intended to be independent of the sensor device: testing was done
 with the InvenSense MPU-9150.
@@ -20,20 +38,6 @@ problems may be experienced on platforms with small amounts of RAM. Options
 are to use frozen bytecode and to periodically run a garbage collection; the
 latter is advisable even on the Pyboard. See the `fusionlcd.py` test program
 for an example of this.
-
-# Remote mode
-
-A new method of operation now exists to cater for the case where the device
-capturing the IMU data is remote from that performing the sensor fusion, and
-connected to it by some form of data link. This mode of operation is described
-[here](./remote/README.md). Note that the fusion may be performed under CPython
-and the remote device may run any system so long as it provides data in the
-correct format.
-
-The following assumes that the IMU is located on the device performing fusion
-and that this device runs MicroPython.
-
-# Introduction
 
 ## Terminology and units of measurement
 
@@ -284,7 +288,7 @@ effects of vibration. This can be surprisingly high (use the sensor to measure
 it). No amount of digital filtering will remove it because it is likely to
 contain frequencies above the sampling rate of the sensor: these will be
 aliased down into the filter passband and affect the results. It's normally
-neccessary to isolate the sensor with a mechanical filter, typically a mass
+necessary to isolate the sensor with a mechanical filter, typically a mass
 supported on very soft rubber mounts.
 
 If using a magnetometer consider the fact that the Earth's magnetic field is
@@ -329,7 +333,7 @@ These are Tait-Bryan angles, commonly used in aircraft orientation (DIN9300).
 In this coordinate system the positive z-axis is down toward Earth. Yaw is the
 angle between Sensor x-axis and Earth magnetic North (or true North if
 corrected for local declination). Looking down on the sensor positive yaw is
-counterclockwise. Pitch is angle between sensor x-axis and Earth ground plane,
+counter-clockwise. Pitch is angle between sensor x-axis and Earth ground plane,
 aircraft nose down toward the Earth is positive, up toward the sky is negative.
 Roll is angle between sensor y-axis and Earth ground plane, y-axis up is
 positive roll. These arise from the definition of the homogeneous rotation

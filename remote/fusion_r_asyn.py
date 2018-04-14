@@ -19,26 +19,59 @@ except ImportError:
     import asyncio
 
 from deltat import is_micropython
-if is_micropython:
-    import gc
-
 from fusion_async import Fusion
 
-# Generator produces synthetic remote data from a file.
+intro = '''
+This demo reads data from a file created by recording IMU data from a Pyboard
+equipped with an IMU device. The data (in JSON format) contains the 3 IMU
+vectors followed by a timestamp in μs.
+
+Initially the board was rotated around each orthogonal axis to calibrate the
+magnetometer. A special line was inserted into the file to signal the end of
+cal.
+
+The device was then partially rotated in heading, then pitch, then roll: this
+data is displayed when calibration is complete.
+
+Calibration takes 15 seconds.
+'''
+# GetData produces synthetic remote data from a file.
+# In an application this would asynchronously read data from a remote device.
+# The change in calibration mode might be returned from the remote as here or
+# handled at the fusion device by user input.
+
 # Initially we're in cal mode
 calibrate = True
-def gdata():
-    global calibrate
-    with open('mpudata', 'r') as f:
-        line = f.readline()
-        while line:
-            if line.strip() == 'cal_end':
-                calibrate = False
-            else:
-                yield json.loads(line)
-            line = f.readline()
+class GetData:
+    def __init__(self):
+        self.f = open('mpudata', 'r')  # Initialise the comms link
+        self.data = None
+        # Because we're reading from a finite file we need a shutdown mechanism.
+        # Would probably not apply to a comms link.
+        self.running = True
 
-get_data = gdata()
+    # Return [[ax, ay, az], [gx, gy, gz], [mx, my, mz], timestamp]
+    # from whatever the device supplies (in this case JSON)
+    async def read(self):
+        global calibrate
+        if not self.running:
+            await asyncio.sleep(0.02)
+            return self.data
+        await asyncio.sleep(0.02)  # Simulate async read data from remote
+        line = self.f.readline()
+        if line:  # The file is finite
+            if line.strip() == 'cal_end':  # Remote has signalled end of cal
+                calibrate = False
+                await asyncio.sleep(0.02)  # Read data from remote
+                line = self.f.readline()
+
+            self.data = json.loads(line)  # Convert from foreign format
+        else:
+            self.running = False
+            self.f.close()
+        return self.data  # Return old data if running has just been cleared
+
+get_data = GetData()
 
 # Test of supplying a timediff
 if is_micropython:
@@ -48,39 +81,20 @@ else:  # Cpython cheat: test data does not roll over
     def TimeDiff(start, end):
         return (start - end)/1000000
 
-running = True
-data = None
-async def read_coro():
-    global data, running
-    await asyncio.sleep(0.02)
-    try:
-        data = next(get_data)
-    except StopIteration:
-        running = False
-    return data  # Return old data if this overruns
-
-fuse = Fusion(read_coro, True, TimeDiff)
-
-async def mem_manage():
-    while True:
-        await asyncio.sleep(0.1)
-        gc.collect()
-        gc.threshold(gc.mem_free() // 4 + gc.mem_alloc())
+fuse = Fusion(get_data.read, True, TimeDiff)
 
 async def display():
-    while running:
-        print("Heading, Pitch, Roll: {:7.3f} {:7.3f} {:7.3f}".format(fuse.heading, fuse.pitch, fuse.roll))
+    print('Heading    Pitch    Roll')
+    while get_data.running:
+        print("{:8.3f} {:8.3f} {:8.3f}".format(fuse.heading, fuse.pitch, fuse.roll))
         await asyncio.sleep(0.5)
 
 async def main_task():
-    print('Calibrating: takes 15 secs.')
-    await asyncio.sleep(0.1)
+    print(intro)
     await fuse.calibrate(lambda : not calibrate)
-    print('Cal done:', fuse.magbias)
+    print('Cal done. Magnetometer bias vector:', fuse.magbias)
     await fuse.start()  # Start the update task
     await display()
 
 loop = asyncio.get_event_loop()
-if is_micropython:  # Task may be necessary on some uP platforms
-    loop.create_task(mem_manage())
 loop.run_until_complete(main_task())

@@ -16,19 +16,40 @@ except ImportError:
 from fusion import Fusion
 from deltat import is_micropython
 
-# Generator produces synthetic remote data from a file.
+intro = '''
+This demo reads data from a file created by recording IMU data from a Pyboard
+equipped with an IMU device. The data (in JSON format) contains the 3 IMU
+vectors followed by a timestamp in μs.
+
+Initially the board was rotated around each orthogonal axis to calibrate the
+magnetometer. A special line was inserted into the file to signal the end of
+cal.
+
+The device was then partially rotated in heading, then pitch, then roll: this
+data is displayed when calibration is complete.
+
+Calibration takes 8 seconds.
+'''
+
+# gdata produces synthetic remote data from a file.
+# In an application this would do a blocking data read from a remote device.
+# The change in calibration mode might be returned from the remote as here or
+# handled at the fusion device by user input.
+
 # Initially we're in cal mode
 calibrate = True
 def gdata():
     global calibrate
+    # Return [[ax, ay, az], [gx, gy, gz], [mx, my, mz], timestamp]
+    # from whatever the device supplies (in this case JSON)
     with open('mpudata', 'r') as f:
-        line = f.readline()
+        line = f.readline()  # An app would do a blocking read of remote data
         while line:
             if line.strip() == 'cal_end':
                 calibrate = False
             else:
-                yield json.loads(line)
-            line = f.readline()
+                yield json.loads(line)  # Convert foreign data format.
+            line = f.readline()  # Blocking read.
 
 get_data = gdata()
 
@@ -40,25 +61,26 @@ else:  # Cpython cheat: test data does not roll over
     def TimeDiff(start, end):
         return (start - end)/1000000
 
-# Expect a timestamp. Use supplied differencing function
+# Expect a timestamp. Use supplied differencing function.
 fuse = Fusion(True, TimeDiff)
 
-def getmag():  # Return (x, y, z) tuple of magnetometer
+def getmag():  # Return (x, y, z) magnetometer vector.
     imudata = next(get_data)
     return imudata[2]
 
-print("Calibrating. Takes 8 secs.")
+print(intro)
 fuse.calibrate(getmag, lambda : not calibrate, lambda : time.sleep(0.01))
-print('Calibration done. Bias:', fuse.magbias)
+print('Cal done. Magnetometer bias vector:', fuse.magbias)
+print('Heading    Pitch    Roll')
 
 count = 0
 while True:
     try:
         data = next(get_data)
-    except StopIteration:
-        break
+    except StopIteration:  # A file is finite.
+        break  # A real app would probably run forever.
     fuse.update(*data)
     if count % 25 == 0:
-        print("Heading, Pitch, Roll: {:7.3f} {:7.3f} {:7.3f}".format(fuse.heading, fuse.pitch, fuse.roll))
+        print("{:8.3f} {:8.3f} {:8.3f}".format(fuse.heading, fuse.pitch, fuse.roll))
     time.sleep(0.02)
     count += 1
