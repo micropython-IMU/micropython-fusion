@@ -115,7 +115,7 @@ time differencing function. This arg may be omitted if the timestamp is derived
 from MicroPython's `utime.ticks_us()`.
 
 For details of the method of updating the fusion data and retrieving the angles
-see the [main document section 2](./README.md#2-fusion-module).
+see the [main document section 2](../README.md#2-fusion-module).
 
 ### 4.3.1 Test program fusion_r_syn.py
 
@@ -152,7 +152,7 @@ time differencing function. This arg may be omitted if the timestamp is derived
 from MicroPython's `utime.ticks_us()`.
 
 For details of the method of updating the fusion data and retrieving the angles
-see the [main document section 3](./README.md#3-asynchronous-version).
+see the [main document section 3](../README.md#3-asynchronous-version).
 
 ### 4.4.1 Test program fusion_r_asyn.py
 
