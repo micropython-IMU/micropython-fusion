@@ -62,7 +62,7 @@ else:  # Cpython cheat: test data does not roll over
         return (start - end)/1000000
 
 # Expect a timestamp. Use supplied differencing function.
-fuse = Fusion(True, TimeDiff)
+fuse = Fusion(TimeDiff)
 
 def getmag():  # Return (x, y, z) magnetometer vector.
     imudata = next(get_data)

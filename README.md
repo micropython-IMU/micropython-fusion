@@ -124,8 +124,8 @@ Test/demo programs:
  5. `fusionlcd.py` Tests the async library with a Hitachi HD44780 2-row LCD
  text display to continuously display angle values.
 
-The directory `remote` contains files pertaining to
-[remote mode](./remote/README.md) only.
+The directory `remote` contains files and information specific to
+[remote mode](./remote/README.md) and to running fusion on standard Python.
 
 ###### [Jump to Contents](./README.md#contents)
 

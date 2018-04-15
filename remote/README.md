@@ -42,9 +42,8 @@ The platform performing the fusion may run any Python version as described in
 The remote device must return a timestamp along with the IMU data, representing
 the time when the IMU data was acquired. This avoids inaccuracy in the fusion
 calculation caused by latency in the communications link. The format of the
-timestamp is arbitrary, but (unless sourced by MicroPython's `utime.ticks_us`)
-the user program must provide a function for calculating the difference between
-two timestamps.
+timestamp is arbitrary, but the user program must provide a function for
+calculating the difference between two timestamps.
 
 User code on the device performing the fusion must convert the data received
 from the remote to the format acceptable to the fusion module, namely
@@ -70,14 +69,18 @@ trivial to convert.
 ## 4.1 Timestamps
 
 The library requires a function which accepts as arguments two timestamps and
-returns a time difference in seconds as a floating point value. The default
-function assumes times derived from MicroPython `utime.ticks_us()`. If the
-timestamp is created by other means the application must provide a differencing
-function.
+returns a time difference in seconds as a floating point value. In the case
+where the acquisition and fusion devices both run MicroPython, the acquisition
+device can transmit values from `utime.ticks_us()` and the differnencing
+function passed to the Fusion constructor would be
 
-If timestamps roll over modulo N, the differencing function must accommodate
-this. In the more usual case where times are floating point values without
-rollover it may simply be a matter of scaling:
+```python
+lambda start, end: utime.ticks_diff(start, end)/1000000
+```
+
+In other cases if timestamps roll over modulo N, the differencing function must
+accommodate this. In more usual case where times are floating point values
+without rollover it may simply be a matter of scaling:
 
 ```python
 def TimeDiff(start, end):  # Timestamps here are in μs
@@ -107,12 +110,10 @@ The `Fusion` constructor should be instantiated as follows:
 
 ```python
 from fusion import Fusion
-fuse = Fusion(True, TimeDiff)
+fuse = Fusion(TimeDiff)
 ```
 
-The first arg tells it to expect a timestamp. The second is the user supplied
-time differencing function. This arg may be omitted if the timestamp is derived
-from MicroPython's `utime.ticks_us()`.
+The arg is the user supplied time differencing function.
 
 For details of the method of updating the fusion data and retrieving the angles
 see the [main document section 2](../README.md#2-fusion-module).
@@ -138,7 +139,7 @@ The `Fusion` constructor should be instantiated as follows:
 
 ```python
 from fusion_async import Fusion
-fuse = Fusion(read_coro, True, TimeDiff)
+fuse = Fusion(read_coro, TimeDiff)
 ```
 
 The first argument is a coroutine. For 9DOF sensors this must be designed to
@@ -147,9 +148,7 @@ respectively followed by a timestamp. In the case of 6DOF sensors it returns
 two 3-tuples for accelerometer and gyro followed by a timestamp. The coroutine
 must include at least one `await` statement to conform to Python syntax rules.
 
-The second arg tells it to expect a timestamp. The third is the user supplied
-time differencing function. This arg may be omitted if the timestamp is derived
-from MicroPython's `utime.ticks_us()`.
+The second arg is the user supplied time differencing function.
 
 For details of the method of updating the fusion data and retrieving the angles
 see the [main document section 3](../README.md#3-asynchronous-version).

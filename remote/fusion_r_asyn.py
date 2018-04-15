@@ -81,7 +81,7 @@ else:  # Cpython cheat: test data does not roll over
     def TimeDiff(start, end):
         return (start - end)/1000000
 
-fuse = Fusion(get_data.read, True, TimeDiff)
+fuse = Fusion(get_data.read, TimeDiff)
 
 async def display():
     print('Heading    Pitch    Roll')

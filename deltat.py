@@ -25,13 +25,13 @@
 # A DeltaT instance, called with function call syntax, returns a time
 # difference from the previous call as a float value. Units seconds.
 
-# If expect_ts is False it uses time.ticks_us as its time source. The default
-# timediff function uses time.ticks_diff() with a division by 1e6.
-# If expect_ts is True a timestamp must be passsed as an arg to instance calls
-# of Fusion.update() or Fusion.update_nomag(). In the async version the user
-# supplied read_coro() must return a timestamp with the vector.
-# Unless the timestamps are in MicroPython native format a nonstandard time
-# differencing function will be required.
+# If running under MicroPython and no time differencing function is supplied
+# to the Fusion constructor it uses time.ticks_us as its time source and a
+# default timediff function using time.ticks_diff() with a division by 1e6.
+# If time differencing function is supplied a timestamp must be passsed as an
+# arg to instance calls of Fusion.update() or Fusion.update_nomag(). In the
+# async version the user supplied read_coro() must return a timestamp with the
+# vector.
 
 # On 1st pass dt evidently can't be computed. A notional value of 100μs is
 # returned. The Madgwick algorithm takes seconds to stabilise.
@@ -42,20 +42,18 @@ except ImportError:
     import time
 
 is_micropython = hasattr(time, 'ticks_diff')
-    # Default time difference function. This is correct if the target is
-    # a MicroPython device.
-if is_micropython:
-    def TimeDiff(start, end):
-        return time.ticks_diff(start, end)/1000000
-else:
-    # RT error on attempt to use the default when it's unsupported
-    def TimeDiff(start, end):
-        raise RuntimeError('You must define a timediff function')
 
 class DeltaT():
-    def __init__(self, expect_ts, timediff):
-        self.expect_ts = expect_ts
-        self.timediff = timediff
+    def __init__(self, timediff):
+        if timediff is None:
+            self.expect_ts = False
+            if is_micropython:
+                self.timediff = lambda start, end : time.ticks_diff(start, end)/1000000
+            else:
+                raise ValueError('You must define a timediff function')
+        else:
+            self.expect_ts = True
+            self.timediff = timediff
         self.start_time = None
 
     def __call__(self, ts):

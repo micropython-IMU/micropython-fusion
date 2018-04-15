@@ -22,7 +22,7 @@ except ImportError:
     import time
 
 from math import sqrt, atan2, asin, degrees, radians
-from deltat import DeltaT, TimeDiff, is_micropython
+from deltat import DeltaT
 
 class Fusion(object):
     '''
@@ -30,9 +30,9 @@ class Fusion(object):
     The update method must be called peiodically. The calculations take 1.6mS on the Pyboard.
     '''
     declination = 0                         # Optional offset for true north. A +ve value adds to heading
-    def __init__(self, expect_ts=False, timediff=TimeDiff):
+    def __init__(self, timediff=None):
         self.magbias = (0, 0, 0)            # local magnetic bias factors: set from calibration
-        self.deltat = DeltaT(expect_ts, timediff)  # Time between updates
+        self.deltat = DeltaT(timediff)      # Time between updates
         self.q = [1.0, 0.0, 0.0, 0.0]       # vector to hold quaternion
         GyroMeasError = radians(40)         # Original code indicates this leads to a 2 sec response time
         self.beta = sqrt(3.0 / 4.0) * GyroMeasError  # compute beta (see README)
