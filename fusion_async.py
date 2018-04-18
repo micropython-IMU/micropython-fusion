@@ -1,7 +1,7 @@
 # fusion_async.py Asynchronous sensor fusion for micropython targets.
 # Ported to MicroPython by Peter Hinch, May 2017.
 # Released under the MIT License (MIT)
-# Copyright (c) 2017 Peter Hinch
+# Copyright (c) 2017, 2018 Peter Hinch
 
 # Uses the uasyncio library to enable updating to run as a background coroutine.
 
@@ -11,13 +11,14 @@
 # Ported to Python. Integrator timing adapted for pyboard.
 # See README.md for documentation.
 
+# V0.9 Time calculations devolved to deltat.py
 
-import utime as time
-import uasyncio as asyncio
+try:
+    import uasyncio as asyncio
+except ImportError:
+    import asyncio
 from math import sqrt, atan2, asin, degrees, radians
-
-def elapsed_micros(start_time):
-    return time.ticks_diff(time.ticks_us(), start_time)
+from deltat import DeltaT
 
 class Fusion(object):
     '''
@@ -25,10 +26,11 @@ class Fusion(object):
     The update method runs as a coroutine. Its calculations take 1.6mS on the Pyboard.
     '''
     declination = 0                         # Optional offset for true north. A +ve value adds to heading
-    def __init__(self, read_coro):
+    def __init__(self, read_coro, timediff=None):
         self.read_coro = read_coro
         self.magbias = (0, 0, 0)            # local magnetic bias factors: set from calibration
-        self.start_time = None              # Time between updates
+        self.expect_ts = timediff is not None
+        self.deltat = DeltaT(timediff)      # Time between updates
         self.q = [1.0, 0.0, 0.0, 0.0]       # vector to hold quaternion
         GyroMeasError = radians(40)         # Original code indicates this leads to a 2 sec response time
         self.beta = sqrt(3.0 / 4.0) * GyroMeasError  # compute beta (see README)
@@ -37,11 +39,13 @@ class Fusion(object):
         self.roll = 0
 
     async def calibrate(self, stopfunc):
-        _, _, mag = await self.read_coro()
+        res = await self.read_coro()
+        mag = res[2]
         magmax = list(mag)                  # Initialise max and min lists with current values
         magmin = magmax[:]
         while not stopfunc():
-            magxyz, _, _  = await self.read_coro()
+            res = await self.read_coro()
+            magxyz = res[2]
             for x in range(3):
                 magmax[x] = max(magmax[x], magxyz[x])
                 magmin[x] = min(magmin[x], magxyz[x])
@@ -50,18 +54,20 @@ class Fusion(object):
     async def start(self, slow_platform=False):
         data = await self.read_coro()
         loop = asyncio.get_event_loop()
-        if len(data) == 2:
+        if len(data) == 2 or (self.expect_ts and len(data) == 3):
             loop.create_task(self._update_nomag(slow_platform))
         else:
             loop.create_task(self._update_mag(slow_platform))
 
     async def _update_nomag(self, slow_platform):
         while True:
-            accel, gyro = await self.read_coro()
+            if self.expect_ts:
+                accel, gyro, ts = await self.read_coro()
+            else:
+                accel, gyro = await self.read_coro()
+                ts = None
             ax, ay, az = accel                  # Units G (but later normalised)
             gx, gy, gz = (radians(x) for x in gyro) # Units deg/s
-            if self.start_time is None:
-                self.start_time = time.ticks_us()  # First run
             q1, q2, q3, q4 = (self.q[x] for x in range(4))   # short name local variable for readability
             # Auxiliary variables to avoid repeated arithmetic
             _2q1 = 2 * q1
@@ -108,8 +114,7 @@ class Fusion(object):
                 await asyncio.sleep_ms(0)
 
             # Integrate to yield quaternion
-            deltat = elapsed_micros(self.start_time) / 1000000
-            self.start_time = time.ticks_us()
+            deltat = self.deltat(ts)
             q1 += qDot1 * deltat
             q2 += qDot2 * deltat
             q3 += qDot3 * deltat
@@ -123,12 +128,14 @@ class Fusion(object):
 
     async def _update_mag(self, slow_platform):
         while True:
-            accel, gyro, mag = await self.read_coro()
+            if self.expect_ts:
+                accel, gyro, mag, ts = await self.read_coro()
+            else:
+                accel, gyro, mag = await self.read_coro()
+                ts = None
             mx, my, mz = (mag[x] - self.magbias[x] for x in range(3)) # Units irrelevant (normalised)
             ax, ay, az = accel                  # Units irrelevant (normalised)
             gx, gy, gz = (radians(x) for x in gyro)  # Units deg/s
-            if self.start_time is None:
-                self.start_time = time.ticks_us()  # First run
             q1, q2, q3, q4 = (self.q[x] for x in range(4))   # short name local variable for readability
             # Auxiliary variables to avoid repeated arithmetic
             _2q1 = 2 * q1
@@ -212,8 +219,7 @@ class Fusion(object):
             qDot4 = 0.5 * (q1 * gz + q2 * gy - q3 * gx) - self.beta * s4
 
             # Integrate to yield quaternion
-            deltat = elapsed_micros(self.start_time) / 1000000
-            self.start_time = time.ticks_us()
+            deltat = self.deltat(ts)
             q1 += qDot1 * deltat
             q2 += qDot2 * deltat
             q3 += qDot3 * deltat

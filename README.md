@@ -1,4 +1,4 @@
-# micropython-fusion
+# Introduction: micropython-fusion
 
 Sensor fusion calculates heading, pitch and roll from the outputs of motion
 tracking devices. This uses the Madgwick algorithm, widely used in multicopter
@@ -8,8 +8,26 @@ adequate for accurate results, suggesting that the performance of this
 implementation is fast enough.
 
 Two implementations are provided: one for synchronous code and one for
-applications using ``uasyncio``. The latter provides for continuous background
-updates of the angle data enabling its access with minimal latency.
+asynchronous applications based on `asyncio`. The latter provides for
+continuous background updates of the angle data enabling access with minimal
+latency.
+
+## Platforms
+
+This document describes the case where sensor data is acquired, and fusion
+is performed, on a single platform running MicroPython.
+
+Other modes are supported:
+
+ * Fusion and data acquisition run on a common device under standard Python.
+ * Fusion and data acquisition run on separate devices linked by some form of
+ communications link. In this mode the data acquisition device may run any type
+ of code and return data in any format, with the user application reading and
+ converting the data to a form acceptable to the library.
+
+These modes are discussed [here](./remote/README.md).
+
+## MicroPython issues
 
 The code is intended to be independent of the sensor device: testing was done
 with the InvenSense MPU-9150.
@@ -18,10 +36,8 @@ The algorithm makes extensive use of floating point maths. Under MicroPython
 this implies RAM allocation. While the code is designed to be platform agnostic
 problems may be experienced on platforms with small amounts of RAM. Options
 are to use frozen bytecode and to periodically run a garbage collection; the
-latter is advisable even on the Pyboard. See the ``fusionlcd.py`` test program
+latter is advisable even on the Pyboard. See the `fusionlcd.py` test program
 for an example of this.
-
-# Introduction
 
 ## Terminology and units of measurement
 
@@ -39,12 +55,12 @@ this is derived with reference to the Earth's magnetic field.
 The object of sensor fusion is to determine a vehicle's attitude with respect
 to Earth. This is expressed in the following three angles:
 
- 1. ``heading`` Angle relative to North. Note some sources use the term "yaw".
+ 1. `heading` Angle relative to North. Note some sources use the term "yaw".
  As this is also used to mean the angle of an aircraft's fuselage relative to
  its direction of motion, I have avoided it.
- 2. ``pitch`` Angle of aircraft nose relative to ground (conventionally +ve is
+ 2. `pitch` Angle of aircraft nose relative to ground (conventionally +ve is
  towards ground). Also known as "elevation".
- 3. ``roll`` Angle of aircraft wings to ground, also known as "bank".
+ 3. `roll` Angle of aircraft wings to ground, also known as "bank".
 
 In this implementation these are measured in degrees.
 
@@ -92,20 +108,24 @@ The issue of the orientation of the sensor is discussed in
 
 # 1. Modules
 
- 1. ``fusion.py`` The standard synchronous fusion library.
- 2. ``fusion_async.py`` Version of the library using uasyncio for nonblocking
+ 1. `fusion.py` The standard synchronous fusion library.
+ 2. `fusion_async.py` Version of the library using uasyncio for nonblocking
  access to pitch, heading and roll.
- 3. ``orientate.py`` A utility for adjusting orientation of an IMU for sensor
+ 3. `deltat.py` Controls timing for above.
+ 4. `orientate.py` A utility for adjusting orientation of an IMU for sensor
  fusion.
 
 Test/demo programs:
 
- 1. ``fusiontest.py`` A simple test program for synchronous library.
- 2. ``fusiontest6.py`` Variant of above for 6DOF sensors.
- 3. ``fusiontest_as.py`` Simple test for the asynchronous library.
- 4. ``fusiontest_as6.py`` Variant of above for 6DOF sensors.
- 5. ``fusionlcd.py`` Tests the async library with a Hitachi HD44780 2-row LCD
+ 1. `fusiontest.py` A simple test program for synchronous library.
+ 2. `fusiontest6.py` Variant of above for 6DOF sensors.
+ 3. `fusiontest_as.py` Simple test for the asynchronous library.
+ 4. `fusiontest_as6.py` Variant of above for 6DOF sensors.
+ 5. `fusionlcd.py` Tests the async library with a Hitachi HD44780 2-row LCD
  text display to continuously display angle values.
+
+The directory `remote` contains files and information specific to
+[remote mode](./remote/README.md) and to running fusion on standard Python.
 
 ###### [Jump to Contents](./README.md#contents)
 
@@ -120,35 +140,35 @@ invalid.
 
 ### 2.1.1 Methods
 
-``update(accel, gyro, mag)``
+`update(accel, gyro, mag)`
 
 For 9DOF sensors. Positional arguments:
- 1. ``accel`` A 3-tuple (x, y, z) of accelerometer data.
- 2. ``gyro`` A 3-tuple (x, y, z) of gyro data.
- 3. ``mag`` A 3-tuple (x, y, z) of magnetometer data.
+ 1. `accel` A 3-tuple (x, y, z) of accelerometer data.
+ 2. `gyro` A 3-tuple (x, y, z) of gyro data.
+ 3. `mag` A 3-tuple (x, y, z) of magnetometer data.
 
 This method should be called periodically at a frequency depending on the
 required response speed.
 
-``update_nomag(accel, gyro)``
+`update_nomag(accel, gyro)`
 
 For 6DOF sensors.  Positional arguments:
- 1. ``accel`` A 3-tuple (x, y, z) of accelerometer data.
- 2. ``gyro`` A 3-tuple (x, y, z) of gyro data.
+ 1. `accel` A 3-tuple (x, y, z) of accelerometer data.
+ 2. `gyro` A 3-tuple (x, y, z) of gyro data.
 
 This should be called periodically, depending on the required response speed.
 
-``calibrate(getxyz, stopfunc, wait=0)``
+`calibrate(getxyz, stopfunc, wait=0)`
 
 Positional arguments:  
- 1. ``getxyz`` A function returning a 3-tuple of magnetic x,y,z values.
- 2. ``stopfunc`` A function returning ``True`` when calibration is deemed
+ 1. `getxyz` A function returning a 3-tuple of magnetic x,y,z values.
+ 2. `stopfunc` A function returning `True` when calibration is deemed
  complete: this could be a timer or an input from the user.
- 3. ``wait`` A delay in ms. Some hardware may require a delay between
+ 3. `wait` A delay in ms. Some hardware may require a delay between
  magnetometer readings. Alternatively a function which returns after a delay
  may be passed.
 
-Calibration updates the ``magbias`` bound variable. It is performed by rotating
+Calibration updates the `magbias` bound variable. It is performed by rotating
 the unit slowly around each orthogonal axis while the routine runs, the aim
 being to compensate for offsets caused by static local magnetic fields.
 
@@ -156,14 +176,14 @@ being to compensate for offsets caused by static local magnetic fields.
 
 Three bound variables provide access to the angles in degrees:
 
- 1. ``heading``
- 2. ``pitch``
- 3. ``roll``
+ 1. `heading`
+ 2. `pitch`
+ 3. `roll`
 
-A bound variable ``beta`` controls algorithm performance. The default value may
+A bound variable `beta` controls algorithm performance. The default value may
 be altered after instantiation. See [section 5.2](./README.md#52-beta).
 
-A class variable ``declination``, defaulting to 0, enables the heading to be
+A class variable `declination`, defaulting to 0, enables the heading to be
 offset in order to provide readings relative to true North rather than magnetic
 North. A positive value adds to heading.
 
@@ -171,12 +191,12 @@ North. A positive value adds to heading.
 
 # 3. Asynchronous version
 
-This uses the ``uasyncio`` library and is intended for applications based on
+This uses the `uasyncio` library and is intended for applications based on
 asynchronous programming. Updates are performed by a continuously running
-coroutine. The ``heading``, ``pitch`` and ``roll`` values are bound variables
+coroutine. The `heading`, `pitch` and `roll` values are bound variables
 which may be accessed at any time with effectively zero latency. The test
-program ``fusionlcd.py`` illustrates its use showing realtime data on a text
-LCD display, ``fusiontest_as.py`` prints it at the REPL.
+program `fusionlcd.py` illustrates its use showing realtime data on a text
+LCD display, `fusiontest_as.py` prints it at the REPL.
 
 ## 3.1 Fusion class
 
@@ -209,7 +229,7 @@ after a calibration phase):
 This starts a continuously running update task. It calls the coro supplied to
 the constructor to determine (from the returned data) whether the sensor is a
 6DOF or 9DOF variety. It then launches the appropriate task. From this point
-the application accesses the ``heading``, ``pitch`` and ``roll`` bound
+the application accesses the `heading`, `pitch` and `roll` bound
 variables as required.
 
 ### 3.1.1 Methods
@@ -219,27 +239,27 @@ Constructor:
 This takes a single argument which is a coroutine. This returns three (x, y, z)
 3-tuples for accelerometer, gyro, and magnetometer data respectively. In the
 case of 6DOF sensors it returns two 3-tuples for accelerometer and gyro only.
-The coroutine must include at least one ``await asyncio.sleep_ms`` statement to
+The coroutine must include at least one `await asyncio.sleep_ms` statement to
 conform to Python syntax rules. A nonzero delay may be required by the IMU
 hardware; it may also be employed to limit the update rate, thereby controlling
 the CPU resources used by this task.
 
-``async def start(slow_platform=False)``  
+`async def start(slow_platform=False)`  
 This launches the update task, returning immediately.
 
 Optional argument:  
- 1. ``slow_platform`` Boolean. Adds a yield to the scheduler in the middle of
+ 1. `slow_platform` Boolean. Adds a yield to the scheduler in the middle of
  the  computation. This may improve application performance on slow platforms
  such as the ESP8266.
 
-``async def calibrate(stopfunc)``  
+`async def calibrate(stopfunc)`  
 For 9DOF sensors only.
 
 Argument:
- 1. ``stopfunc`` Function returning ``True`` when calibration is deemed
+ 1. `stopfunc` Function returning `True` when calibration is deemed
  complete: this could be a timer or an input from the user.
 
-Calibration updates the ``magbias`` bound variable. It is performed by rotating
+Calibration updates the `magbias` bound variable. It is performed by rotating
 the unit slowly around each orthogonal axis while the routine runs, the aim
 being to compensate for offsets caused by static local magnetic fields.
 
@@ -248,14 +268,14 @@ being to compensate for offsets caused by static local magnetic fields.
 Three bound variables provide the angles with negligible latency. Units are
 degrees.
 
- 1. ``heading``
- 2. ``pitch``
- 3. ``roll``
+ 1. `heading`
+ 2. `pitch`
+ 3. `roll`
 
-A bound variable ``beta`` controls algorithm performance. The default value may
+A bound variable `beta` controls algorithm performance. The default value may
 be altered after instantiation. See [section 5.2](./README.md#52-beta).
 
-A class variable ``declination``, defaulting to 0, enables the heading to be
+A class variable `declination`, defaulting to 0, enables the heading to be
 offset in order to provide readings relative to true North rather than magnetic
 North. A positive value adds to heading.
 
@@ -268,7 +288,7 @@ effects of vibration. This can be surprisingly high (use the sensor to measure
 it). No amount of digital filtering will remove it because it is likely to
 contain frequencies above the sampling rate of the sensor: these will be
 aliased down into the filter passband and affect the results. It's normally
-neccessary to isolate the sensor with a mechanical filter, typically a mass
+necessary to isolate the sensor with a mechanical filter, typically a mass
 supported on very soft rubber mounts.
 
 If using a magnetometer consider the fact that the Earth's magnetic field is
@@ -276,7 +296,7 @@ small: the field detected may be influenced by ferrous metals in the machine
 being controlled or by currents in nearby wires. If the latter are variable
 there is little chance of compensating for them, but constant magnetic offsets
 may be addressed by calibration. This involves rotating the machine around each
-of three orthogonal axes while running the fusion object's ``calibrate``
+of three orthogonal axes while running the fusion object's `calibrate`
 method.
 
 The local coordinate system for the sensor is usually defined as follows,
@@ -291,7 +311,7 @@ don't conform to this convention.
 You may want to take control of garbage collection (GC). In systems with
 continuously running control loops there is a case for doing an explicit GC on
 each iteration: this tends to make the GC time shorter and ensures it occurs at
-a predictable time. See the MicroPython ``gc`` module.
+a predictable time. See the MicroPython `gc` module.
 
 ###### [Jump to Contents](./README.md#contents)
 
@@ -313,7 +333,7 @@ These are Tait-Bryan angles, commonly used in aircraft orientation (DIN9300).
 In this coordinate system the positive z-axis is down toward Earth. Yaw is the
 angle between Sensor x-axis and Earth magnetic North (or true North if
 corrected for local declination). Looking down on the sensor positive yaw is
-counterclockwise. Pitch is angle between sensor x-axis and Earth ground plane,
+counter-clockwise. Pitch is angle between sensor x-axis and Earth ground plane,
 aircraft nose down toward the Earth is positive, up toward the sky is negative.
 Roll is angle between sensor y-axis and Earth ground plane, y-axis up is
 positive roll. These arise from the definition of the homogeneous rotation
