@@ -1,9 +1,12 @@
 # fusion_r_asyn.py Test for sensor fusion remote device
 # simulated by captured data mpudata
 # Author Peter Hinch
-# Released under the MIT License (MIT)
-# Copyright (c) 2018 Peter Hinch
-# Run under MicroPython on Unix or other target, or CPython 3.5 or later
+# Released under the MIT License (MIT) See LICENSE
+# Copyright (c) 2017-2020 Peter Hinch
+
+# Requires:
+# uasyncio V3 (Included in daily builds and release builds later than V1.12).
+# Run under MicroPython on Unix or other target, or CPython 3.8 or later
 
 try:
     import utime as time
@@ -96,5 +99,4 @@ async def main_task():
     await fuse.start()  # Start the update task
     await display()
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main_task())
+asyncio.run(main_task())

@@ -1,8 +1,10 @@
 # fusion_async.py Asynchronous sensor fusion for micropython targets.
 # Ported to MicroPython by Peter Hinch, May 2017.
-# Released under the MIT License (MIT)
-# Copyright (c) 2017, 2018 Peter Hinch
+# Released under the MIT License (MIT) See LICENSE
+# Copyright (c) 2017-2020 Peter Hinch
 
+# Requires:
+# uasyncio V3 (Included in daily builds and release builds later than V1.12).
 # Uses the uasyncio library to enable updating to run as a background coroutine.
 
 # Supports 6 and 9 degrees of freedom sensors. Tested with InvenSense MPU-9150 9DOF sensor.
@@ -53,11 +55,10 @@ class Fusion(object):
 
     async def start(self, slow_platform=False):
         data = await self.read_coro()
-        loop = asyncio.get_event_loop()
         if len(data) == 2 or (self.expect_ts and len(data) == 3):
-            loop.create_task(self._update_nomag(slow_platform))
+            asyncio.create_task(self._update_nomag(slow_platform))
         else:
-            loop.create_task(self._update_mag(slow_platform))
+            asyncio.create_task(self._update_mag(slow_platform))
 
     async def _update_nomag(self, slow_platform):
         while True:

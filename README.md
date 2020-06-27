@@ -39,6 +39,20 @@ are to use frozen bytecode and to periodically run a garbage collection; the
 latter is advisable even on the Pyboard. See the `fusionlcd.py` test program
 for an example of this.
 
+## MicroPython firmware dependency
+
+Some modules in this library use asynchronous programming. This uses the
+`asyncio` library under CPython, `uasyncio` under MicroPython. The MicroPython
+version is much improved after a complete rewrite and is at version 3.0. It is
+syntax compatible with CPython 3.8 `asyncio`. All code has been updated to use
+this syntax, which is unsupported by older versions.
+
+To run asynchronous modules MicroPython targets should use a daily build of
+firmware, or a release build after V1.12: such firmware incorporates `uasyncio`
+V3.
+
+Where asynchronous code is run under CPython, this must be V3.8 or later.
+
 ## Terminology and units of measurement
 
 I should point out that I'm unfamiliar with aircraft conventions and would
@@ -78,32 +92,19 @@ The issue of the orientation of the sensor is discussed in
 
 # Contents
 
- 1. [Modules](./README.md#1-modules)
-
- 2. [Fusion module](./README.md#2-fusion-module)
-
-  2.1 [Fusion class](./README.md#21-fusion-class)
-
-   2.1.1 [Methods](./README.md#211-methods)
-
-   2.1.2 [Bound variables](./README.md#212-bound-variables)
-
- 3. [Asynchronous version](./README.md#3-asynchronous-version)
-
-  3.1 [Fusion class](./README.md#31-fusion-class)
-
-   3.1.1 [Methods](./README.md#311-methods)
-
-   3.1.2 [Variables](./README.md#312-variables)
-
- 4. [Notes for constructors](./README.md#4-notes-for-constructors)
- 
- 5. [Background notes](./README.md#5-background-notes)
-
-  5.1 [Heading Pitch and Roll](./README.md#51-heading-pitch-and-roll)
-
-  5.2 [Beta](./README.md#52-beta)
-
+ 1. [Modules](./README.md#1-modules)  
+ 2. [Fusion module](./README.md#2-fusion-module)  
+  2.1 [Fusion class](./README.md#21-fusion-class)  
+   2.1.1 [Methods](./README.md#211-methods)  
+   2.1.2 [Bound variables](./README.md#212-bound-variables)  
+ 3. [Asynchronous version](./README.md#3-asynchronous-version)  
+  3.1 [Fusion class](./README.md#31-fusion-class)  
+   3.1.1 [Methods](./README.md#311-methods)  
+   3.1.2 [Variables](./README.md#312-variables)  
+ 4. [Notes for constructors](./README.md#4-notes-for-constructors)  
+ 5. [Background notes](./README.md#5-background-notes)  
+  5.1 [Heading Pitch and Roll](./README.md#51-heading-pitch-and-roll)  
+  5.2 [Beta](./README.md#52-beta)  
  6. [References](./README.md#6-references)
 
 # 1. Modules
@@ -123,6 +124,9 @@ Test/demo programs:
  4. `fusiontest_as6.py` Variant of above for 6DOF sensors.
  5. `fusionlcd.py` Tests the async library with a Hitachi HD44780 2-row LCD
  text display to continuously display angle values.
+
+If using InvenSense MPU9150, MPU6050 or MPU9250 IMU's, drivers may be found
+[here](https://github.com/micropython-IMU/micropython-mpu9x50).
 
 The directory `remote` contains files and information specific to
 [remote mode](./remote/README.md) and to running fusion on standard Python.

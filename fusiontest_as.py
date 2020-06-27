@@ -1,10 +1,14 @@
 # fusiontest_as.py Test for asynchronous sensor fusion on Pyboard.
 # Author: Peter Hinch
-# Released under the MIT License (MIT)
-# Copyright (c) 2017 Peter Hinch
+# Released under the MIT License (MIT) See LICENSE
+# Copyright (c) 2017-2020 Peter Hinch
 
 # Requires:
-# uasyncio (official or modified version)
+# uasyncio V3 (Included in daily builds and release builds later than V1.12).
+# From https://github.com/micropython-IMU/micropython-mpu9x50:
+# imu.py, mpu9150.py, vector3d.py
+# From this repo: deltat.py fusion_async.py
+
 # MPU9150 on X position
 # Normally open pushbutton connected between pin Y7 and ground
 
@@ -45,11 +49,8 @@ async def test_task():
         await fuse.calibrate(lambda : not switch.value())
         print('Mag bias vector: ', fuse.magbias)
     await fuse.start()  # Start the update task
-    loop = asyncio.get_event_loop()
-    loop.create_task(display())
+    await display()
 
 
-loop = asyncio.get_event_loop()
-loop.create_task(mem_manage())
-loop.create_task(test_task())
-loop.run_forever()
+asyncio.create_task(mem_manage())
+asyncio.run(test_task())

@@ -1,13 +1,14 @@
 # capture.py Data capture for remote operation. Uses LCD display and uasyncio.
 # Author: Peter Hinch
-# Released under the MIT License (MIT)
-# Copyright (c) 2018 Peter Hinch
+# Released under the MIT License (MIT) See LICENSE
+# Copyright (c) 2017-2020 Peter Hinch
 
 # Requires:
-# uasyncio (official or modified version)
+# uasyncio V3 (Included in daily builds and release builds later than V1.12).
 # MPU9150 on X position
 # Normally open pushbutton connected between pin Y7 and ground
-# LCD driver alcd.py from https://github.com/peterhinch/micropython-async.git
+# LCD driver alcd.py uasyncio V3 version from
+# https://github.com/peterhinch/micropython-async/blob/master/v3/as_drivers/hd44780/alcd.py
 # Hitachi HD44780 2 row LCD display wired using 4 bit data bus as follows:
 
 # Name LCD connector Board
@@ -71,6 +72,5 @@ async def lcd_task():
     await fuse.start()  # Start the update task
     await display()
 
-loop = asyncio.get_event_loop()
-loop.create_task(mem_manage())
-loop.run_until_complete(lcd_task())
+asyncio.create_task(mem_manage())
+asyncio.run(lcd_task())

@@ -1,15 +1,18 @@
 # fusionlcd.py Test for asynchronous sensor fusion on Pyboard. Uses LCD display and uasyncio.
 # Author: Peter Hinch
-# Released under the MIT License (MIT)
-# Copyright (c) 2017 Peter Hinch
-# V0.8 16th May 2017 Adapted for uasyncio
-# V0.7 25th June 2015 Adapted for new MPU9x50 interface
+# Released under the MIT License (MIT) See LICENSE
+# Copyright (c) 2017-2020 Peter Hinch
 
 # Requires:
-# uasyncio (official or modified version)
+# uasyncio V3 (Included in daily builds and release builds later than V1.12).
 # MPU9150 on X position
 # Normally open pushbutton connected between pin Y7 and ground
-# LCD driver alcd.py from https://github.com/peterhinch/micropython-async.git
+# LCD driver alcd.py uasyncio V3 version from
+# https://github.com/peterhinch/micropython-async/blob/master/v3/as_drivers/hd44780/alcd.py
+# From https://github.com/micropython-IMU/micropython-mpu9x50:
+# imu.py, mpu9150.py, vector3d.py
+# From this repo: deltat.py fusion_async.py
+
 # Hitachi HD44780 2 row LCD display wired using 4 bit data bus as follows:
 
 # Name LCD connector Board
