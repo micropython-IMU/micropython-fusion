@@ -178,11 +178,16 @@ being to compensate for offsets caused by static local magnetic fields.
 
 ### 2.1.2 Bound variables
 
-Three bound variables provide access to the angles in degrees:
+Three bound variables provide access to the Euler angles in degrees:
 
  1. `heading`
  2. `pitch`
  3. `roll`
+
+Quaternion data may be accesed via the `q` bound variable:
+
+ 1. `q` Contains `[w, x, y, z]` representing the normalised (unit) quaternion
+ `w + xi + yj + zk`. Quaternion data is dimensionless.
 
 A bound variable `beta` controls algorithm performance. The default value may
 be altered after instantiation. See [section 5.2](./README.md#52-beta).
@@ -197,7 +202,7 @@ North. A positive value adds to heading.
 
 This uses the `uasyncio` library and is intended for applications based on
 asynchronous programming. Updates are performed by a continuously running
-coroutine. The `heading`, `pitch` and `roll` values are bound variables
+coroutine. The `heading`, `pitch`, `roll` and `q` values are bound variables
 which may be accessed at any time with effectively zero latency. The test
 program `fusionlcd.py` illustrates its use showing realtime data on a text
 LCD display, `fusiontest_as.py` prints it at the REPL.
@@ -276,7 +281,12 @@ degrees.
  2. `pitch`
  3. `roll`
 
-A bound variable `beta` controls algorithm performance. The default value may
+Quaternion data may be accesed via the `q` bound variable:
+
+ 1. `q` Contains `[w, x, y, z]` representing the normalised (unit) quaternion
+ `w + xi + yj + zk`. Quaternion data is dimensionless.
+
+ A bound variable `beta` controls algorithm performance. The default value may
 be altered after instantiation. See [section 5.2](./README.md#52-beta).
 
 A class variable `declination`, defaulting to 0, enables the heading to be
