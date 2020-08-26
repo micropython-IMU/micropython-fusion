@@ -189,6 +189,10 @@ Quaternion data may be accesed via the `q` bound variable:
  1. `q` Contains `[w, x, y, z]` representing the normalised (unit) quaternion
  `w + xi + yj + zk`. Quaternion data is dimensionless.
 
+See [my notes on quaternions](https://github.com/peterhinch/micropython-samples/blob/master/README.md#412-quaternions)
+for code enabling them to be used to perform 3D rotation with minimal
+mathematics. They are easier to use for this purpose than Euler angles.
+
 A bound variable `beta` controls algorithm performance. The default value may
 be altered after instantiation. See [section 5.2](./README.md#52-beta).
 
